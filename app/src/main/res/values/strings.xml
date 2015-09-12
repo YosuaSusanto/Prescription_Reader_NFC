@@ -1,0 +1,27 @@
+<resources>
+    <string name="app_name">Prescription Reader NFC</string>
+
+    <string name="title_section1">Scanning</string>
+    <string name="title_section2">Inventory</string>
+    <string name="title_section3">Monitoring</string>
+    <string name="title_section4">Storage</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+
+    <string name="action_example">Example action</string>
+
+    <string name="action_settings">Settings</string>
+
+<!-- TODO: Remove or change this placeholder text -->
+    <string name="brand_name">Brand Name:</string>
+    <string name="generic_name">Generic Name:</string>
+    <string name="dosage_form">Dosage Form/Strength:</string>
+    <string name="per_dosage">Pills/Tablets Per Dosage:</string>
+    <string name="total_dosage">Total Dosage:</string>
+    <string name="consumption_time">Consumption Time:</string>
+    <string name="consume">Consume\nMedications</string>
+    <string name="reset">Reset\nFields</string>
+    <string name="save">Save\nMedication</string>
+
+</resources>
