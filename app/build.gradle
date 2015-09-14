@@ -22,5 +22,5 @@ android {
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile 'com.android.support:support-v4:19.1.0'
-    compile files('src/main/res/raw/jtds1.3.0.jar')
+    compile files('src/main/res/raw/jtds1_3_0.jar')
 }

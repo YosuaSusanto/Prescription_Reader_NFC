@@ -136,7 +136,7 @@ public class MainActivity extends FragmentActivity
         if (!mNfcAdapter.isEnabled()) {
             Toast.makeText(this, "NFC is disabled.", Toast.LENGTH_LONG).show();
         } else {
-            Toast.makeText(this, "NFC is Enabled", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "NFC is enabled", Toast.LENGTH_LONG).show();
         }
 
         handleIntent(getIntent());
@@ -146,6 +146,15 @@ public class MainActivity extends FragmentActivity
         String action = intent.getAction();
         if (NfcAdapter.ACTION_NDEF_DISCOVERED.equals(action)) {
 
+            mNavigationDrawerFragment.closeDrawer();
+            Fragment fragment = new Scan();
+            FragmentManager fragmentManager = getFragmentManager();
+            fragmentManager.beginTransaction()
+                    .replace(R.id.container, fragment, "scanFragment")
+                    .commit();
+            mNavigationDrawerFragment.selectItem(0);
+
+            Toast.makeText(this, "Tag discovered.", Toast.LENGTH_LONG).show();
             String type = intent.getType();
             if (MIME_TEXT_PLAIN.equals(type)) {
 
@@ -299,8 +308,11 @@ public class MainActivity extends FragmentActivity
             byte[] payload = record.getPayload();
 
             // Get the Text Encoding
-            String textEncoding = ((payload[0] & 128) == 0) ? "UTF-8" : "UTF-16";
-
+            String textEncoding;
+            if ((payload[0] & 128) == 0)
+                textEncoding = "UTF-8";
+            else
+                textEncoding = "UTF-16";
             // Get the Language Code
             int languageCodeLength = payload[0] & 0063;
 
@@ -316,6 +328,7 @@ public class MainActivity extends FragmentActivity
         protected void onPostExecute(String result) {
             if (result != null) {
                 FragmentManager manager = getFragmentManager();
+
                 mScanFragment = (Scan) manager.findFragmentByTag("scanFragment");
 
                 if (mScanFragment != null) {
@@ -642,7 +655,7 @@ public class MainActivity extends FragmentActivity
         }
         startManagingCursor(cursor);
         Log.d("Cursor", "After managing cursor");
-        String[] fromFieldNames = new String[]{dbHandler.KEY_BRANDNAME, dbHandler.KEY_GENERICNAME, dbHandler.KEY_PERDOSAGE, dbHandler.KEY_DOSAGEFORM, dbHandler.KEY_TOTALDOSAGE, dbHandler.KEY_CONSUMPTIONTIME};
+        String[] fromFieldNames = new String[]{DatabaseHandler.KEY_BRANDNAME, DatabaseHandler.KEY_GENERICNAME, DatabaseHandler.KEY_PERDOSAGE, DatabaseHandler.KEY_DOSAGEFORM, DatabaseHandler.KEY_TOTALDOSAGE, DatabaseHandler.KEY_CONSUMPTIONTIME};
         int[] toViewIDs = new int[]
                 {R.id.list_BrandName, R.id.list_GenericName, R.id.list_PerDosage, R.id.list_DosageForm, R.id.List_TotalDosage, R.id.list_ConsumptionTime};
 

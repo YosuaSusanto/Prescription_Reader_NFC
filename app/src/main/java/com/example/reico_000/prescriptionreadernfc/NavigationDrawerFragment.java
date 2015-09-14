@@ -114,6 +114,11 @@ public class NavigationDrawerFragment extends Fragment {
         return mDrawerLayout != null && mDrawerLayout.isDrawerOpen(mFragmentContainerView);
     }
 
+    public void closeDrawer() {
+        if (isDrawerOpen()) {
+            mDrawerLayout.closeDrawer(mFragmentContainerView);
+        }
+    }
     /**
      * Users of this fragment must call this method to set up the navigation drawer interactions.
      *
@@ -188,7 +193,7 @@ public class NavigationDrawerFragment extends Fragment {
         mDrawerLayout.setDrawerListener(mDrawerToggle);
     }
 
-    private void selectItem(int position) {
+    public void selectItem(int position) {
         mCurrentSelectedPosition = position;
         if (mDrawerListView != null) {
             mDrawerListView.setItemChecked(position, true);
