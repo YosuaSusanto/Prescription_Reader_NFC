@@ -23,4 +23,5 @@ dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile 'com.android.support:support-v4:19.1.0'
     compile files('src/main/res/raw/jtds1_3_0.jar')
+    compile project(':volley')
 }

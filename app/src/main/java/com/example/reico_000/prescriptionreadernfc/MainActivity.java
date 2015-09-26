@@ -8,7 +8,6 @@ import android.app.AlertDialog;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.PendingIntent;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -16,7 +15,6 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.StrictMode;
-import android.provider.ContactsContract;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -31,10 +29,8 @@ import android.widget.TextView;
 import java.io.UnsupportedEncodingException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -61,7 +57,7 @@ public class MainActivity extends FragmentActivity
     public String Administration = "";
     private PendingIntent pendingIntent;
     private PendingIntent pendingIntentAlarm;
-    private DatabaseHandler dbHandler = new DatabaseHandler(this);
+    private MedicationDatabaseSQLiteHandler dbHandler = new MedicationDatabaseSQLiteHandler(this);
     private Connection connectionSQL = null;
     /**
      * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
@@ -86,7 +82,7 @@ public class MainActivity extends FragmentActivity
         setContentView(R.layout.activity_main);
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
-        DatabaseHandler db = new DatabaseHandler(this);
+        MedicationDatabaseSQLiteHandler db = new MedicationDatabaseSQLiteHandler(this);
 
 
         /**
@@ -394,10 +390,12 @@ public class MainActivity extends FragmentActivity
 
     public void restoreActionBar() {
         ActionBar actionBar = getActionBar();
-        actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
-        actionBar.setDisplayShowTitleEnabled(true);
-        Log.i("MyActivity", "Fragment Title " + mTitle);
-        actionBar.setTitle(mTitle);
+        if (actionBar != null) {
+            actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
+            actionBar.setDisplayShowTitleEnabled(true);
+            Log.i("MyActivity", "Fragment Title " + mTitle);
+            actionBar.setTitle(mTitle);
+        }
     }
 
 
@@ -486,8 +484,8 @@ public class MainActivity extends FragmentActivity
                 long saved_Id = -1;
                 int saved_TotalDosage = -1;
                 if (cursor.moveToFirst()) {
-                    saved_Id = cursor.getLong(DatabaseHandler.COL_ROWID);
-                    saved_TotalDosage = cursor.getInt(DatabaseHandler.COL_TOTALDOSAGE);
+                    saved_Id = cursor.getLong(MedicationDatabaseSQLiteHandler.COL_ROWID);
+                    saved_TotalDosage = cursor.getInt(MedicationDatabaseSQLiteHandler.COL_TOTALDOSAGE);
                 }
                 cursor.close();
                 Log.e("Consume Func: ", "saved_ID = " + saved_Id);
@@ -507,11 +505,9 @@ public class MainActivity extends FragmentActivity
                                 Log.e("respondConsumeMed", "pst is null!");
                             } else {
                                 Log.d("respondConsumeMed", "pst not null leh");
+                                pst.execute();
+                                pst.close();
                             }
-                            pst.execute();
-
-                            pst.close();
-
                     } catch (Exception ex){
                         ex.printStackTrace();
                     }
@@ -578,15 +574,15 @@ public class MainActivity extends FragmentActivity
 
     public void respondSaveMedication() {
         Log.d("Insert: ", "Saved Medication Inserting ..");
-        DatabaseHandler db = new DatabaseHandler(this);
+        MedicationDatabaseSQLiteHandler db = new MedicationDatabaseSQLiteHandler(this);
         if (!BrandName.equals("")) {
             Cursor cursor = dbHandler.getDosageForm(BrandName, DosageForm);
             long saved_Id = -1;
             int saved_TotalDosage = -1;
 
             if (cursor.moveToFirst()) {
-                saved_Id = cursor.getLong(DatabaseHandler.COL_ROWID);
-                saved_TotalDosage = cursor.getInt(DatabaseHandler.COL_TOTALDOSAGE);
+                saved_Id = cursor.getLong(MedicationDatabaseSQLiteHandler.COL_ROWID);
+                saved_TotalDosage = cursor.getInt(MedicationDatabaseSQLiteHandler.COL_TOTALDOSAGE);
             }
             cursor.close();
             if (saved_Id > -1) {
@@ -655,7 +651,7 @@ public class MainActivity extends FragmentActivity
         }
         startManagingCursor(cursor);
         Log.d("Cursor", "After managing cursor");
-        String[] fromFieldNames = new String[]{DatabaseHandler.KEY_BRANDNAME, DatabaseHandler.KEY_GENERICNAME, DatabaseHandler.KEY_PERDOSAGE, DatabaseHandler.KEY_DOSAGEFORM, DatabaseHandler.KEY_TOTALDOSAGE, DatabaseHandler.KEY_CONSUMPTIONTIME};
+        String[] fromFieldNames = new String[]{MedicationDatabaseSQLiteHandler.KEY_BRANDNAME, MedicationDatabaseSQLiteHandler.KEY_GENERICNAME, MedicationDatabaseSQLiteHandler.KEY_PERDOSAGE, MedicationDatabaseSQLiteHandler.KEY_DOSAGEFORM, MedicationDatabaseSQLiteHandler.KEY_TOTALDOSAGE, MedicationDatabaseSQLiteHandler.KEY_CONSUMPTIONTIME};
         int[] toViewIDs = new int[]
                 {R.id.list_BrandName, R.id.list_GenericName, R.id.list_PerDosage, R.id.list_DosageForm, R.id.List_TotalDosage, R.id.list_ConsumptionTime};
 
@@ -688,7 +684,7 @@ public class MainActivity extends FragmentActivity
         if (cursor != null) {
 
             if (cursor.moveToFirst()) {
-                String info_administration = cursor.getString(DatabaseHandler.COL_ADMINISTRATION);
+                String info_administration = cursor.getString(MedicationDatabaseSQLiteHandler.COL_ADMINISTRATION);
 
                 new AlertDialog.Builder(this)
                         .setTitle("Administration")
@@ -715,8 +711,8 @@ public class MainActivity extends FragmentActivity
         if (cursor != null) {
 
             if (cursor.moveToFirst()) {
-                final long idDB = cursor.getLong(DatabaseHandler.COL_ROWID);
-                final String info_BrandName = cursor.getString(DatabaseHandler.COL_BRANDNAME);
+                final long idDB = cursor.getLong(MedicationDatabaseSQLiteHandler.COL_ROWID);
+                final String info_BrandName = cursor.getString(MedicationDatabaseSQLiteHandler.COL_BRANDNAME);
 
                 new AlertDialog.Builder(this)
                         .setTitle("Delete Medication?")
@@ -745,7 +741,7 @@ public class MainActivity extends FragmentActivity
     public static String getCurrentTimeStamp(){
         try {
 
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US);
             String currentTimeStamp = dateFormat.format(new Date()); // Find todays date
 
             return currentTimeStamp;

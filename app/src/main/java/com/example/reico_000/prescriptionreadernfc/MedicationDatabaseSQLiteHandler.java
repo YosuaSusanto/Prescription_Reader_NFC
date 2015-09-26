@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * Created by reico_000 on 14/3/2015.
  */
-public class DatabaseHandler extends SQLiteOpenHelper{
+public class MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
 	// All Static variables
 	// Database Version
 	private static final int DATABASE_VERSION = 1;
@@ -50,7 +50,7 @@ public class DatabaseHandler extends SQLiteOpenHelper{
     public static final int COL_PATIENTID = 7;
     public static final int COL_ADMINISTRATION = 8;
 
-	public DatabaseHandler(Context context) {
+	public MedicationDatabaseSQLiteHandler(Context context) {
 		super(context, DATABASE_NAME, null, DATABASE_VERSION);
 	}
 
@@ -155,7 +155,7 @@ public class DatabaseHandler extends SQLiteOpenHelper{
         Cursor c = db.rawQuery(countQuery, null);
 
         if (c != null) {
-            return c.getInt(DatabaseHandler.COL_TOTALDOSAGE);
+            return c.getInt(MedicationDatabaseSQLiteHandler.COL_TOTALDOSAGE);
         } else{
             return 0;
         }
