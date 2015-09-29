@@ -42,6 +42,8 @@ import android.nfc.tech.Ndef;
 import android.os.AsyncTask;
 import android.widget.Toast;
 
+import helper.SessionManager;
+
 
 public class MainActivity extends FragmentActivity
         implements Scan.OnFragmentInteractionListener,Inventory.OnFragmentInteractionListener,
@@ -59,6 +61,8 @@ public class MainActivity extends FragmentActivity
     private PendingIntent pendingIntentAlarm;
     private MedicationDatabaseSQLiteHandler dbHandler = new MedicationDatabaseSQLiteHandler(this);
     private Connection connectionSQL = null;
+
+    private SessionManager session;
     /**
      * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
      */
@@ -83,7 +87,7 @@ public class MainActivity extends FragmentActivity
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
         MedicationDatabaseSQLiteHandler db = new MedicationDatabaseSQLiteHandler(this);
-
+        session  = new SessionManager(getApplicationContext());
 
         /**
          * CRUD Operations
@@ -126,16 +130,15 @@ public class MainActivity extends FragmentActivity
             Toast.makeText(this, "This device doesn't support NFC.", Toast.LENGTH_LONG).show();
             finish();
             return;
-
         }
 
-        if (!mNfcAdapter.isEnabled()) {
-            Toast.makeText(this, "NFC is disabled.", Toast.LENGTH_LONG).show();
-        } else {
-            Toast.makeText(this, "NFC is enabled", Toast.LENGTH_LONG).show();
-        }
+            if (!mNfcAdapter.isEnabled()) {
+                Toast.makeText(this, "NFC is disabled.", Toast.LENGTH_LONG).show();
+            } else {
+                Toast.makeText(this, "NFC is enabled", Toast.LENGTH_LONG).show();
+            }
 
-        handleIntent(getIntent());
+            handleIntent(getIntent());
     }
 
     private void handleIntent(Intent intent) {
@@ -193,7 +196,6 @@ public class MainActivity extends FragmentActivity
          * Call this before onPause, otherwise an IllegalArgumentException is thrown as well.
          */
         stopForegroundDispatch(this, mNfcAdapter);
-
         super.onPause();
     }
 
@@ -338,7 +340,6 @@ public class MainActivity extends FragmentActivity
         }
     }
 
-
     @Override
     public void onNavigationDrawerItemSelected(int position) {
         // update the main content by replacing fragments
@@ -398,7 +399,6 @@ public class MainActivity extends FragmentActivity
         }
     }
 
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         if (!mNavigationDrawerFragment.isDrawerOpen()) {
@@ -422,9 +422,30 @@ public class MainActivity extends FragmentActivity
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             return true;
+        } else if (id == R.id.action_logout) {
+            logout();
+            return true;
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void logout() {
+        new AlertDialog.Builder(this)
+            .setTitle("Logout Confirmation")
+            .setMessage("Do you really want to logout?")
+            .setIcon(android.R.drawable.ic_dialog_alert)
+            .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+
+                public void onClick(DialogInterface dialog, int whichButton) {
+                    session.setLogin(false);
+                    Toast.makeText(getApplicationContext(), "Logout successful", Toast.LENGTH_LONG);
+                    Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+                    startActivity(intent);
+                    finish();
+                }
+            })
+            .setNegativeButton(android.R.string.no, null).show();
     }
 
     @Override

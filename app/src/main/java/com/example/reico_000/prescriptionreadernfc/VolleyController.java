@@ -26,6 +26,9 @@ public class VolleyController extends Application {
     }
 
     public static synchronized VolleyController getInstance() {
+        if (mInstance == null) {
+            mInstance = new VolleyController();
+        }
         return mInstance;
     }
 

@@ -13,10 +13,14 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.android.volley.NetworkResponse;
+import com.android.volley.NoConnectionError;
 import com.android.volley.Request.Method;
 import com.android.volley.Response;
+import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -24,9 +28,6 @@ import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.example.reico_000.prescriptionreadernfc.R;
-import com.example.reico_000.prescriptionreadernfc.AppConfig;
-import com.example.reico_000.prescriptionreadernfc.VolleyController;
 import helper.UserDatabaseSQLiteHandler;
 import helper.SessionManager;
 
@@ -111,7 +112,8 @@ public class RegisterActivity extends Activity {
         String tag_string_req = "req_register";
 
         pDialog.setMessage("Registering ...");
-        showDialog();
+//        pDialog.setMessage(AppConfig.URL_REGISTER);
+        showProgressDialog();
 
         StringRequest strReq = new StringRequest(Method.POST,
                 AppConfig.URL_REGISTER, new Response.Listener<String>() {
@@ -151,7 +153,7 @@ public class RegisterActivity extends Activity {
                         // Error occurred in registration. Get the error
                         // message
                         String errorMsg = jObj.getString("error_msg");
-                        Toast.makeText(getApplicationContext(),
+                        Toast.makeText(getApplicationContext(), "Error message: " +
                                 errorMsg, Toast.LENGTH_LONG).show();
                     }
                 } catch (JSONException e) {
@@ -163,9 +165,37 @@ public class RegisterActivity extends Activity {
 
             @Override
             public void onErrorResponse(VolleyError error) {
+                if (error instanceof TimeoutError) {
+                    displayMessage("Error: TimeoutError", "long");
+                } else if ( error instanceof NoConnectionError) {
+                    displayMessage("Error: NoConnectionError", "long");
+                } else {
+                    String json = null;
+
+                    NetworkResponse response = error.networkResponse;
+                    if (response == null) {
+                        displayMessage("Network response == null", "long");
+                    } else if (response.data == null) {
+                        displayMessage("Network response data == null", "long");
+                    } else {
+                        if (response != null && response.data != null) {
+                            switch (response.statusCode) {
+                                case 400:
+                                    displayMessage("lalala", "short");
+//                            json = new String(response.data);
+//                            json = trimMessage(json, "message");
+//                            if(json != null) displayMessage(json, "long");
+                                    break;
+                                default:
+                                    displayMessage("statusCode: " + Integer.toString(response.statusCode), "short");
+                                    break;
+                            }
+                            //Additional cases
+                        }
+                    }
+                }
                 Log.e(TAG, "Registration Error: " + error.getMessage());
-                Toast.makeText(getApplicationContext(),
-                        error.getMessage(), Toast.LENGTH_LONG).show();
+//                displayMessage("Error message2: " + error.getMessage(), "long");
                 hideDialog();
             }
         }) {
@@ -183,11 +213,38 @@ public class RegisterActivity extends Activity {
 
         };
 
+        //hideDialog();
         // Adding request to request queue
-        VolleyController.getInstance().addToRequestQueue(strReq, tag_string_req);
+//        VolleyController.getInstance().addToRequestQueue(strReq, tag_string_req);
+        Volley.newRequestQueue(this).add(strReq);
     }
 
-    private void showDialog() {
+
+    public String trimMessage(String json, String key){
+        String trimmedString = null;
+
+        try{
+            JSONObject obj = new JSONObject(json);
+            trimmedString = obj.getString(key);
+        } catch(JSONException e){
+            e.printStackTrace();
+            return null;
+        }
+
+        return trimmedString;
+    }
+
+    //Somewhere that has access to a context
+    public void displayMessage(String toastString, String toastLength){
+        if (toastLength.toLowerCase() == "long") {
+            Toast.makeText(getApplicationContext(), toastString, Toast.LENGTH_LONG).show();
+        }
+        else if (toastLength.toLowerCase() == "short") {
+            Toast.makeText(getApplicationContext(), toastString, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void showProgressDialog() {
         if (!pDialog.isShowing())
             pDialog.show();
     }
