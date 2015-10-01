@@ -500,7 +500,7 @@ public class MainActivity extends FragmentActivity
         Log.d("Respond", "ConsumeMedTest Works");
 
         if ((!BrandName.equals("")) && (!DosageForm.equals(""))) {
-            Cursor cursor = dbHandler.getDosageForm(BrandName, DosageForm);
+            Cursor cursor = dbHandler.getByNameAndDosageForm(BrandName, DosageForm);
             if (cursor != null) {
                 long saved_Id = -1;
                 int saved_TotalDosage = -1;
@@ -597,7 +597,7 @@ public class MainActivity extends FragmentActivity
         Log.d("Insert: ", "Saved Medication Inserting ..");
         MedicationDatabaseSQLiteHandler db = new MedicationDatabaseSQLiteHandler(this);
         if (!BrandName.equals("")) {
-            Cursor cursor = dbHandler.getDosageForm(BrandName, DosageForm);
+            Cursor cursor = dbHandler.getByNameAndDosageForm(BrandName, DosageForm);
             long saved_Id = -1;
             int saved_TotalDosage = -1;
 

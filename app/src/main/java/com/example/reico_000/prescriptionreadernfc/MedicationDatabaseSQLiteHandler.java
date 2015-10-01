@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * Created by reico_000 on 14/3/2015.
  */
-public class MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
+public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
 	// All Static variables
 	// Database Version
 	private static final int DATABASE_VERSION = 1;
@@ -139,7 +139,7 @@ public class MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
         return c;
     }
 
-    public Cursor getDosageForm(String scan_BrandName, String scan_DosageForm){
+    public Cursor getByNameAndDosageForm(String scan_BrandName, String scan_DosageForm){
         SQLiteDatabase db = this.getWritableDatabase();
         String countQuery = "SELECT  * FROM " + TABLE_MEDICATIONS + " WHERE " + KEY_BRANDNAME + " = '" + scan_BrandName + "' AND " + KEY_DOSAGEFORM + " = '" + scan_DosageForm + "'";
         Cursor c = db.rawQuery(countQuery, null);
