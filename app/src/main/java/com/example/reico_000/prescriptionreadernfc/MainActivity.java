@@ -94,13 +94,17 @@ public class MainActivity extends FragmentActivity
          //         * */
 //        Inserting Contacts
 //        Log.d("Delete", "Deletingggg");
-//        db.deleteContact("Tykerb");
-//        db.deleteContact("Capecitabine");
-//        db.deleteContact("Test Brand Name");
+//        db.deleteMedicationObject("Tykerb");
+//        db.deleteMedicationObject("Capecitabine");
+//        db.deleteMedicationObject("Test Brand Name");
 //
 //        Log.d("Insert: ", "Inserting ..");
 //        db.addMedication(new MedicationObject("Tykerb", "Laptinib", "250mg Pill", "5", "105", "ME", "105440102"));
 
+        Bundle extras = getIntent().getExtras();
+        if (extras != null) {
+            PatientID = extras.getString("name");
+        }
         // Reading all contacts
         Log.d("Reading: ", "Reading all contacts..");
         List<MedicationObject> medObjects = db.getAllMedications();
@@ -439,7 +443,7 @@ public class MainActivity extends FragmentActivity
 
                 public void onClick(DialogInterface dialog, int whichButton) {
                     session.setLogin(false);
-                    Toast.makeText(getApplicationContext(), "Logout successful", Toast.LENGTH_LONG);
+                    Toast.makeText(getApplicationContext(), "Logout successful", Toast.LENGTH_LONG).show();
                     Intent intent = new Intent(MainActivity.this, LoginActivity.class);
                     startActivity(intent);
                     finish();
@@ -518,8 +522,9 @@ public class MainActivity extends FragmentActivity
                     // Update online database with updated effectiveTotalDosage
                     try{
                             connectionSQL = SQServerConnection.dbConnector();
-                            String query = "INSERT INTO [NFCMedFeedback].[dbo].[NFCMedicationFeedback] (PatientID, PhoneConsumptionTime, BrandName, GenericName, RemainingDosage)\n" +
-                                    "VALUES ( '"+ PatientID+ "' , '"+ getCurrentTimeStamp() + "' , '" + BrandName + "' , '"+ GenericName + "' , " + effectiveTotalDosage +" );";
+                            String query = "INSERT INTO [NFCMedFeedback].[dbo].[NFCMedicationFeedback] (PatientID, PhoneConsumptionTime, " +
+                                    "BrandName, GenericName, RemainingDosage)\n" + "VALUES ( '"+ PatientID+ "' , '"+ getCurrentTimeStamp() +
+                                    "' , '" + BrandName + "' , '"+ GenericName + "' , " + effectiveTotalDosage +" );";
                         Log.d("Online Server", "Update String: "+ query);
                         PreparedStatement pst = connectionSQL.prepareStatement(query);
                             if (pst == null) {
@@ -536,7 +541,7 @@ public class MainActivity extends FragmentActivity
                     // If effectiveTotal Dosage is <1, delete medicine
                     // else just notify user consumption successful
                     if (effectiveTotalDosage < 1) {
-                        dbHandler.deleteContact(saved_Id);
+                        dbHandler.deleteMedicationObject(saved_Id);
                         new AlertDialog.Builder(this)
                                 .setTitle("Medication Course Completed")
                                 .setMessage("Medication Consumption Completed\n" +
@@ -620,7 +625,8 @@ public class MainActivity extends FragmentActivity
                         .setIcon(android.R.drawable.ic_dialog_alert)
                         .show();
             } else {
-                db.addMedication(new MedicationObject(BrandName, GenericName, DosageForm, PerDosage, TotalDosage, ConsumptionTime, PatientID, Administration));
+                db.addMedication(new MedicationObject(BrandName, GenericName, DosageForm, PerDosage, TotalDosage,
+                        ConsumptionTime, PatientID, Administration));
                 Log.d("Insert: ", "Saved Medication Successful!");
                 new AlertDialog.Builder(this)
                         .setTitle("New Medication")
@@ -672,9 +678,12 @@ public class MainActivity extends FragmentActivity
         }
         startManagingCursor(cursor);
         Log.d("Cursor", "After managing cursor");
-        String[] fromFieldNames = new String[]{MedicationDatabaseSQLiteHandler.KEY_BRANDNAME, MedicationDatabaseSQLiteHandler.KEY_GENERICNAME, MedicationDatabaseSQLiteHandler.KEY_PERDOSAGE, MedicationDatabaseSQLiteHandler.KEY_DOSAGEFORM, MedicationDatabaseSQLiteHandler.KEY_TOTALDOSAGE, MedicationDatabaseSQLiteHandler.KEY_CONSUMPTIONTIME};
+        String[] fromFieldNames = new String[]{MedicationDatabaseSQLiteHandler.KEY_BRANDNAME, MedicationDatabaseSQLiteHandler.KEY_GENERICNAME,
+                MedicationDatabaseSQLiteHandler.KEY_PERDOSAGE, MedicationDatabaseSQLiteHandler.KEY_DOSAGEFORM,
+                MedicationDatabaseSQLiteHandler.KEY_TOTALDOSAGE, MedicationDatabaseSQLiteHandler.KEY_CONSUMPTIONTIME};
         int[] toViewIDs = new int[]
-                {R.id.list_BrandName, R.id.list_GenericName, R.id.list_PerDosage, R.id.list_DosageForm, R.id.List_TotalDosage, R.id.list_ConsumptionTime};
+                {R.id.list_BrandName, R.id.list_GenericName, R.id.list_PerDosage, R.id.list_DosageForm, R.id.List_TotalDosage,
+                        R.id.list_ConsumptionTime};
 
         Log.d("Cursor", "After managing cursor");
         SimpleCursorAdapter myCursorAdapter =
@@ -740,7 +749,7 @@ public class MainActivity extends FragmentActivity
                         .setMessage("Delete " + info_BrandName + "?")
                         .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int which) {
-                                dbHandler.deleteContact(idDB);
+                                dbHandler.deleteMedicationObject(idDB);
                                 Toast.makeText(MainActivity.this, info_BrandName + " has been deleted.", Toast.LENGTH_LONG).show();
                             }
                         })

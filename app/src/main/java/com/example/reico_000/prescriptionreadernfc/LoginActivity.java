@@ -151,6 +151,7 @@ public class LoginActivity extends Activity {
                         // Launch main activity
                         Intent intent = new Intent(LoginActivity.this,
                                 MainActivity.class);
+                        intent.putExtra("name", name);
                         startActivity(intent);
                         finish();
                     } else {

@@ -38,7 +38,6 @@ public class Scan extends Fragment implements View.OnClickListener {
     private TextView perDosageTextView;
     private TextView totalDosageTextView;
 
-
     private ImageView scan_Morning;
     private ImageView scan_Afternoon;
     private ImageView scan_Evening;

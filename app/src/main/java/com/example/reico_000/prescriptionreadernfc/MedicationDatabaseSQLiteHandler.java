@@ -66,7 +66,7 @@ public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_MEDICATIONS);
         onCreate(db);
     }
-		// Adding new contact
+		// Adding new MedicationObject
 		public void addMedication(MedicationObject medicationObject) {
         SQLiteDatabase db = this.getWritableDatabase();
 
@@ -84,8 +84,6 @@ public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
         db.insert(TABLE_MEDICATIONS, null, values);
         db.close(); // Closing database connection
     }
-        // Getting single contact
-		//public Contact getContact(int id) {}
 
         // Getting All Medications
 		public List<MedicationObject> getAllMedications() {
@@ -124,6 +122,20 @@ public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
             c.moveToFirst();
         } else {
             Log.d("Test Fragment Cursor", "it's null bitch");
+        }
+        return c;
+    }
+
+    public Cursor getRowsByPatientId(String scan_PatientId) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        String selectQuery = "SELECT  * FROM " + TABLE_MEDICATIONS + " WHERE " + KEY_PATIENTID + " = '" + scan_PatientId + "'";
+
+        Cursor c = db.rawQuery(selectQuery, null);
+        if (c != null) {
+            Log.d("Test Fragment Cursor", "it ain't null");
+            c.moveToFirst();
+        } else {
+            Log.d("Test Fragment Cursor", "it's null");
         }
         return c;
     }
@@ -174,8 +186,8 @@ public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
         return db.update(TABLE_MEDICATIONS, newValues, where, null) != 0;
     }
 
-        // Getting contacts Count
-		public int getContactsCount() {
+        // Getting MedObjects Count
+		public int getMedObjectsCount() {
             String countQuery = "SELECT  * FROM " + TABLE_MEDICATIONS;
             SQLiteDatabase db = this.getReadableDatabase();
             Cursor cursor = db.rawQuery(countQuery, null);
@@ -184,11 +196,9 @@ public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
             // return count
             return cursor.getCount();
         }
-        // Updating single contact // needed to add medication
-		//public int updateContact(Contact contact) {}
 
-        // Deleting single contact
-		public void deleteContact(Long MedId) {
+        // Deleting single MedObject
+		public void deleteMedicationObject(Long MedId) {
             SQLiteDatabase db = this.getWritableDatabase();
             db.delete(TABLE_MEDICATIONS, KEY_ID + " = ?",
                     new String[] { String.valueOf(MedId) });
