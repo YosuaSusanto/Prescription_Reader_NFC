@@ -49,6 +49,7 @@ public class MainActivity extends FragmentActivity
         implements Scan.OnFragmentInteractionListener,Inventory.OnFragmentInteractionListener,
         Monitoring.OnFragmentInteractionListener, NavigationDrawerFragment.NavigationDrawerCallbacks, Communicator {
 
+    private boolean useNFC = false;
     public String BrandName = "";
     public String GenericName = "";
     public String DosageForm = "";
@@ -127,28 +128,30 @@ public class MainActivity extends FragmentActivity
                 R.id.navigation_drawer,
                 (DrawerLayout) findViewById(R.id.drawer_layout));
 
-        mNfcAdapter = NfcAdapter.getDefaultAdapter(this);
+        if (useNFC) {
+            mNfcAdapter = NfcAdapter.getDefaultAdapter(this);
 
-        if (mNfcAdapter == null) {
-            // Stop here, we definitely need NFC
-            Toast.makeText(this, "This device doesn't support NFC.", Toast.LENGTH_LONG).show();
-            finish();
-            return;
-        }
+            if (mNfcAdapter == null) {
+                // Stop here, we definitely need NFC
+                Toast.makeText(this, "This device doesn't support NFC.", Toast.LENGTH_LONG).show();
+                finish();
+                return;
+            }
 
             if (!mNfcAdapter.isEnabled()) {
                 Toast.makeText(this, "NFC is disabled.", Toast.LENGTH_LONG).show();
             } else {
                 Toast.makeText(this, "NFC is enabled", Toast.LENGTH_LONG).show();
             }
+        }
 
-            handleIntent(getIntent());
+        handleIntent(getIntent());
     }
 
     private void handleIntent(Intent intent) {
         String action = intent.getAction();
-        if (NfcAdapter.ACTION_NDEF_DISCOVERED.equals(action)) {
 
+        if (!useNFC) {
             mNavigationDrawerFragment.closeDrawer();
             Fragment fragment = new Scan();
             FragmentManager fragmentManager = getFragmentManager();
@@ -156,28 +159,40 @@ public class MainActivity extends FragmentActivity
                     .replace(R.id.container, fragment, "scanFragment")
                     .commit();
             mNavigationDrawerFragment.selectItem(0);
-
-            Toast.makeText(this, "Tag discovered.", Toast.LENGTH_LONG).show();
             String type = intent.getType();
-            if (MIME_TEXT_PLAIN.equals(type)) {
+        } else {
+            if (NfcAdapter.ACTION_NDEF_DISCOVERED.equals(action)) {
 
-                Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
-                new NdefReaderTask().execute(tag);
+                mNavigationDrawerFragment.closeDrawer();
+                Fragment fragment = new Scan();
+                FragmentManager fragmentManager = getFragmentManager();
+                fragmentManager.beginTransaction()
+                        .replace(R.id.container, fragment, "scanFragment")
+                        .commit();
+                mNavigationDrawerFragment.selectItem(0);
 
-            } else {
-                Log.d(TAG, "Wrong mime type: " + type);
-            }
-        } else if (NfcAdapter.ACTION_TECH_DISCOVERED.equals(action)) {
+                Toast.makeText(this, "Tag discovered.", Toast.LENGTH_LONG).show();
+                String type = intent.getType();
+                if (MIME_TEXT_PLAIN.equals(type)) {
 
-            // In case we would still use the Tech Discovered Intent
-            Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
-            String[] techList = tag.getTechList();
-            String searchedTech = Ndef.class.getName();
-
-            for (String tech : techList) {
-                if (searchedTech.equals(tech)) {
+                    Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
                     new NdefReaderTask().execute(tag);
-                    break;
+
+                } else {
+                    Log.d(TAG, "Wrong mime type: " + type);
+                }
+            } else if (NfcAdapter.ACTION_TECH_DISCOVERED.equals(action)) {
+
+                // In case we would still use the Tech Discovered Intent
+                Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
+                String[] techList = tag.getTechList();
+                String searchedTech = Ndef.class.getName();
+
+                for (String tech : techList) {
+                    if (searchedTech.equals(tech)) {
+                        new NdefReaderTask().execute(tag);
+                        break;
+                    }
                 }
             }
         }
@@ -191,7 +206,9 @@ public class MainActivity extends FragmentActivity
          * It's important, that the activity is in the foreground (resumed). Otherwise
          * an IllegalStateException is thrown.
          */
-        setupForegroundDispatch(this, mNfcAdapter);
+        if (useNFC) {
+            setupForegroundDispatch(this, mNfcAdapter);
+        }
     }
 
     @Override
@@ -199,7 +216,9 @@ public class MainActivity extends FragmentActivity
         /**
          * Call this before onPause, otherwise an IllegalArgumentException is thrown as well.
          */
-        stopForegroundDispatch(this, mNfcAdapter);
+        if (useNFC) {
+            stopForegroundDispatch(this, mNfcAdapter);
+        }
         super.onPause();
     }
 
@@ -429,6 +448,12 @@ public class MainActivity extends FragmentActivity
         } else if (id == R.id.action_logout) {
             logout();
             return true;
+        } else if (id == R.id.action_scanItem1) {
+            scanItemOne();
+            return true;
+        } else if (id == R.id.action_scanItem2) {
+            scanItemTwo();
+            return true;
         }
 
         return super.onOptionsItemSelected(item);
@@ -451,6 +476,48 @@ public class MainActivity extends FragmentActivity
             })
             .setNegativeButton(android.R.string.no, null).show();
     }
+
+    ////////// FOR DEBUGGING PURPOSE ///////////
+    private void scanItemOne() {
+        BrandName = "Tykerb";
+        GenericName = "Laptinib";
+        DosageForm = "250 mg Pill";
+        PerDosage = "5";
+        TotalDosage = "105";
+        ConsumptionTime = "M";
+        //Should the tag include patientID?? Why do we need a unique prescription for each patient?
+        //PatientID = "434562553";
+        Administration = "Should be taken on an empty stomach: Take at least 1 hr before or 1 hr after a meal. " +
+                "Do not eat/drink grapefruit products.";
+        updateFragment();
+    }
+
+    private void scanItemTwo() {
+        BrandName = "Capecitabine";
+        GenericName = "Xeloda";
+        DosageForm = "500 mg Pill";
+        PerDosage = "5";
+        TotalDosage = "28";
+        ConsumptionTime = "ME";
+        //Should the tag include patientID?? Why do we need a unique prescription for each patient?
+        //PatientID = "434562553";
+        Administration = "Should be taken with food: Take w/in ½ hr after meals.";
+        updateFragment();
+    }
+
+    private void updateFragment() {
+        FragmentManager manager = getFragmentManager();
+
+        mScanFragment = (Scan) manager.findFragmentByTag("scanFragment");
+
+        if (mScanFragment != null) {
+            Log.d("debug", "fragment is not null");
+            mScanFragment.changeText(BrandName, GenericName, DosageForm, PerDosage, TotalDosage, ConsumptionTime);
+        } else {
+            Log.e("DEBUG", "fragment is NULL");
+        }
+    }
+    //////////////////////////////////////
 
     @Override
     public void onFragmentInteraction(Uri uri) {
