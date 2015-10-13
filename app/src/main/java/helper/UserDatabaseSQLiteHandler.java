@@ -33,6 +33,7 @@ public class UserDatabaseSQLiteHandler extends SQLiteOpenHelper {
     private static final String KEY_EMAIL = "email";
     private static final String KEY_UID = "uid";
     private static final String KEY_CREATED_AT = "created_at";
+    private static final String KEY_PATIENT_ID = "patient_id";
 
     public UserDatabaseSQLiteHandler(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -63,7 +64,7 @@ public class UserDatabaseSQLiteHandler extends SQLiteOpenHelper {
     /**
      * Storing user details in database
      * */
-    public void addUser(String name, String email, String uid, String created_at) {
+    public void addUser(String name, String email, String uid, String created_at, String patient_id) {
         SQLiteDatabase db = this.getWritableDatabase();
 
         ContentValues values = new ContentValues();
@@ -71,6 +72,7 @@ public class UserDatabaseSQLiteHandler extends SQLiteOpenHelper {
         values.put(KEY_EMAIL, email); // Email
         values.put(KEY_UID, uid); // Email
         values.put(KEY_CREATED_AT, created_at); // Created At
+        values.put(KEY_PATIENT_ID, patient_id); // Created At
 
         // Inserting Row
         long id = db.insert(TABLE_USER, null, values);
@@ -95,6 +97,7 @@ public class UserDatabaseSQLiteHandler extends SQLiteOpenHelper {
             user.put("email", cursor.getString(2));
             user.put("uid", cursor.getString(3));
             user.put("created_at", cursor.getString(4));
+            user.put("patient_id", cursor.getString(5));
         }
         cursor.close();
         db.close();
