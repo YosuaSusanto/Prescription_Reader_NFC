@@ -103,7 +103,7 @@ public class MainActivity extends FragmentActivity
 
         Bundle extras = getIntent().getExtras();
         if (extras != null) {
-            PatientID = extras.getString("name");
+            PatientID = extras.getString("patient_id");
         }
         // Reading all contacts
         Log.d("Reading: ", "Reading all contacts..");
