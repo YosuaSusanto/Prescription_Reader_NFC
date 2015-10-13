@@ -284,7 +284,7 @@ public class MainActivity extends FragmentActivity
                         PerDosage = readText(records[3]);
                         TotalDosage = readText(records[4]);
                         ConsumptionTime = readText(records[5]);
-                        PatientID = readText(records[6]);
+                        //PatientID = readText(records[6]);
                         Administration = readText(records[7]);
 
                         return BrandName;
@@ -662,7 +662,7 @@ public class MainActivity extends FragmentActivity
         PerDosage = "";
         TotalDosage = "";
         ConsumptionTime = "";
-        PatientID = "";
+        //PatientID = "";
         Administration = "";
     }
 
