@@ -213,9 +213,6 @@ public class RegisterActivity extends Activity {
 
         };
 
-        //hideDialog();
-        // Adding request to request queue
-//        VolleyController.getInstance().addToRequestQueue(strReq, tag_string_req);
         Volley.newRequestQueue(this).add(strReq);
     }
 

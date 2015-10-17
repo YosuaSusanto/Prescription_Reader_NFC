@@ -22,4 +22,14 @@
         android:title="@string/action_scanItem2"
         android:orderInCategory="100"
         android:showAsAction="never" />
+    <item
+        android:id="@+id/action_getConsumption1"
+        android:title="@string/action_getConsumption1"
+        android:orderInCategory="100"
+        android:showAsAction="never" />
+    <item
+        android:id="@+id/action_getConsumption2"
+        android:title="@string/action_getConsumption2"
+        android:orderInCategory="100"
+        android:showAsAction="never" />
 </menu>

@@ -28,7 +28,6 @@ import android.widget.TextView;
 
 import java.io.UnsupportedEncodingException;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
@@ -56,11 +55,11 @@ public class MainActivity extends FragmentActivity
     public String PerDosage = "";
     public String TotalDosage = "";
     public String ConsumptionTime = "";
-    public String PatientID = "";
+    public String PatientID = "43462553";
     public String Administration = "";
     private PendingIntent pendingIntent;
     private PendingIntent pendingIntentAlarm;
-    private MedicationDatabaseSQLiteHandler dbHandler = new MedicationDatabaseSQLiteHandler(this);
+    private MedicationDatabaseSQLiteHandler medicationDBHandler;
     private Connection connectionSQL = null;
 
     private SessionManager session;
@@ -87,7 +86,7 @@ public class MainActivity extends FragmentActivity
         setContentView(R.layout.activity_main);
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
-        MedicationDatabaseSQLiteHandler db = new MedicationDatabaseSQLiteHandler(this);
+        medicationDBHandler = MedicationDatabaseSQLiteHandler.getInstance(this);
         session  = new SessionManager(getApplicationContext());
 
         /**
@@ -108,7 +107,7 @@ public class MainActivity extends FragmentActivity
         }
         // Reading all contacts
         Log.d("Reading: ", "Reading all contacts..");
-        List<MedicationObject> medObjects = db.getAllMedications();
+        List<MedicationObject> medObjects = medicationDBHandler.getAllMedications();
 
         for (MedicationObject medicationObject : medObjects) {
             String log = "UID: " + medicationObject.get_ID() + " ,BrandName: " + medicationObject.get_brandName() + " ," +
@@ -454,6 +453,12 @@ public class MainActivity extends FragmentActivity
         } else if (id == R.id.action_scanItem2) {
             scanItemTwo();
             return true;
+        } else if (id == R.id.action_getConsumption1) {
+            getConsumption(1);
+            return true;
+        } else if (id == R.id.action_getConsumption2) {
+            getConsumption(2);
+            return true;
         }
 
         return super.onOptionsItemSelected(item);
@@ -486,10 +491,10 @@ public class MainActivity extends FragmentActivity
         TotalDosage = "105";
         ConsumptionTime = "M";
         //Should the tag include patientID?? Why do we need a unique prescription for each patient?
-        //PatientID = "434562553";
+        PatientID = "434562553";
         Administration = "Should be taken on an empty stomach: Take at least 1 hr before or 1 hr after a meal. " +
                 "Do not eat/drink grapefruit products.";
-        updateFragment();
+        updateScanFragment();
     }
 
     private void scanItemTwo() {
@@ -502,11 +507,36 @@ public class MainActivity extends FragmentActivity
         //Should the tag include patientID?? Why do we need a unique prescription for each patient?
         //PatientID = "434562553";
         Administration = "Should be taken with food: Take w/in ½ hr after meals.";
-        updateFragment();
+        updateScanFragment();
     }
 
-    private void updateFragment() {
+    private void getConsumption(int i) {
+        if (i == 1) {
+            BrandName = "Tykerb";
+            GenericName = "Laptinib";
+        } else if (i == 2) {
+            BrandName = "Capecitabine";
+            GenericName = "Xeloda";
+        }
+        ConsumptionDetailsObject consumptionObject = medicationDBHandler.getConsumptionDetails(PatientID, BrandName, GenericName);
+        DosageForm = Integer.toString(consumptionObject.get_medicationID());
+        PerDosage = consumptionObject.get_consumedAt();
+        TotalDosage = "";
+        ConsumptionTime = "";
+        Administration = "";
+        updateScanFragment();
+    }
+
+    private void updateScanFragment() {
         FragmentManager manager = getFragmentManager();
+
+//        Can't be implemented, commit will only be executed when the main thread is ready
+//        Fragment fragment = new Scan();
+//        manager.beginTransaction()
+//                .replace(R.id.container, fragment, "scanFragment")
+//                .commit();
+//        manager.executePendingTransactions();
+//        mNavigationDrawerFragment.selectItem(0);
 
         mScanFragment = (Scan) manager.findFragmentByTag("scanFragment");
 
@@ -571,44 +601,45 @@ public class MainActivity extends FragmentActivity
         Log.d("Respond", "ConsumeMedTest Works");
 
         if ((!BrandName.equals("")) && (!DosageForm.equals(""))) {
-            Cursor cursor = dbHandler.getByNameAndDosageForm(BrandName, DosageForm);
+            Cursor cursor = medicationDBHandler.getByNameAndDosageForm(BrandName, DosageForm);
             if (cursor != null) {
                 long saved_Id = -1;
                 int saved_TotalDosage = -1;
                 if (cursor.moveToFirst()) {
-                    saved_Id = cursor.getLong(MedicationDatabaseSQLiteHandler.COL_ROWID);
-                    saved_TotalDosage = cursor.getInt(MedicationDatabaseSQLiteHandler.COL_TOTALDOSAGE);
+                    saved_Id = cursor.getLong(cursor.getColumnIndex("_id"));//MedicationDatabaseSQLiteHandler.COL_ROWID);
+                    saved_TotalDosage = cursor.getInt(cursor.getColumnIndex("TotalDosage"));//MedicationDatabaseSQLiteHandler.COL_TOTALDOSAGE);
                 }
                 cursor.close();
                 Log.e("Consume Func: ", "saved_ID = " + saved_Id);
                 Toast.makeText(this, "saved_ID = " + saved_Id, Toast.LENGTH_SHORT);
                 int effectiveTotalDosage = saved_TotalDosage - Integer.parseInt(PerDosage);
                 if (saved_Id > -1) {
-                    dbHandler.updateRow(saved_Id, effectiveTotalDosage);
+                    medicationDBHandler.addConsumptionDetails(PatientID, BrandName, GenericName, getCurrentTimeStamp());
+                    medicationDBHandler.updateRow(saved_Id, effectiveTotalDosage);
 
                     // Update online database with updated effectiveTotalDosage
-                    try{
-                            connectionSQL = SQServerConnection.dbConnector();
-                            String query = "INSERT INTO [NFCMedFeedback].[dbo].[NFCMedicationFeedback] (PatientID, PhoneConsumptionTime, " +
-                                    "BrandName, GenericName, RemainingDosage)\n" + "VALUES ( '"+ PatientID+ "' , '"+ getCurrentTimeStamp() +
-                                    "' , '" + BrandName + "' , '"+ GenericName + "' , " + effectiveTotalDosage +" );";
-                        Log.d("Online Server", "Update String: "+ query);
-                        PreparedStatement pst = connectionSQL.prepareStatement(query);
-                            if (pst == null) {
-                                Log.e("respondConsumeMed", "pst is null!");
-                            } else {
-                                Log.d("respondConsumeMed", "pst not null leh");
-                                pst.execute();
-                                pst.close();
-                            }
-                    } catch (Exception ex){
-                        ex.printStackTrace();
-                    }
+//                    try{
+//                            connectionSQL = SQServerConnection.dbConnector();
+//                            String query = "INSERT INTO [NFCMedFeedback].[dbo].[NFCMedicationFeedback] (PatientID, PhoneConsumptionTime, " +
+//                                    "BrandName, GenericName, RemainingDosage)\n" + "VALUES ( '"+ PatientID+ "' , '"+ getCurrentTimeStamp() +
+//                                    "' , '" + BrandName + "' , '"+ GenericName + "' , " + effectiveTotalDosage +" );";
+//                        Log.d("Online Server", "Update String: "+ query);
+//                        PreparedStatement pst = connectionSQL.prepareStatement(query);
+//                            if (pst == null) {
+//                                Log.e("respondConsumeMed", "pst is null!");
+//                            } else {
+//                                Log.d("respondConsumeMed", "pst not null leh");
+//                                pst.execute();
+//                                pst.close();
+//                            }
+//                    } catch (Exception ex){
+//                        ex.printStackTrace();
+//                    }
 
                     // If effectiveTotal Dosage is <1, delete medicine
                     // else just notify user consumption successful
                     if (effectiveTotalDosage < 1) {
-                        dbHandler.deleteMedicationObject(saved_Id);
+                        medicationDBHandler.deleteMedicationObject(saved_Id);
                         new AlertDialog.Builder(this)
                                 .setTitle("Medication Course Completed")
                                 .setMessage("Medication Consumption Completed\n" +
@@ -667,20 +698,20 @@ public class MainActivity extends FragmentActivity
 
     public void respondSaveMedication() {
         Log.d("Insert: ", "Saved Medication Inserting ..");
-        MedicationDatabaseSQLiteHandler db = new MedicationDatabaseSQLiteHandler(this);
+        medicationDBHandler = MedicationDatabaseSQLiteHandler.getInstance(this);
         if (!BrandName.equals("")) {
-            Cursor cursor = dbHandler.getByNameAndDosageForm(BrandName, DosageForm);
+            Cursor cursor = medicationDBHandler.getByNameAndDosageForm(BrandName, DosageForm);
             long saved_Id = -1;
             int saved_TotalDosage = -1;
 
             if (cursor.moveToFirst()) {
-                saved_Id = cursor.getLong(MedicationDatabaseSQLiteHandler.COL_ROWID);
-                saved_TotalDosage = cursor.getInt(MedicationDatabaseSQLiteHandler.COL_TOTALDOSAGE);
+                saved_Id = cursor.getLong(cursor.getColumnIndex("_id"));//MedicationDatabaseSQLiteHandler.COL_ROWID);
+                saved_TotalDosage = cursor.getInt(cursor.getColumnIndex("TotalDosage"));//MedicationDatabaseSQLiteHandler.COL_TOTALDOSAGE);
             }
             cursor.close();
             if (saved_Id > -1) {
                 int effectiveTotalDosage = saved_TotalDosage + Integer.parseInt(TotalDosage);
-                dbHandler.updateRow(saved_Id, effectiveTotalDosage);
+                medicationDBHandler.updateRow(saved_Id, effectiveTotalDosage);
                 new AlertDialog.Builder(this)
                         .setTitle("Additional Dosages added")
                         .setMessage("Medication Exists in Inventory.\nAdditional Dosages added!")
@@ -692,7 +723,7 @@ public class MainActivity extends FragmentActivity
                         .setIcon(android.R.drawable.ic_dialog_alert)
                         .show();
             } else {
-                db.addMedication(new MedicationObject(BrandName, GenericName, DosageForm, PerDosage, TotalDosage,
+                medicationDBHandler.addMedication(new MedicationObject(BrandName, GenericName, DosageForm, PerDosage, TotalDosage,
                         ConsumptionTime, PatientID, Administration));
                 Log.d("Insert: ", "Saved Medication Successful!");
                 new AlertDialog.Builder(this)
@@ -735,7 +766,7 @@ public class MainActivity extends FragmentActivity
 
     private void populateListViewfromdb() {
         Log.d("Test", "populateListViewfromdb entered");
-        Cursor cursor = dbHandler.getAllRows();
+        Cursor cursor = medicationDBHandler.getAllRows();
         Log.d("Test", "populateListViewfromdb entered(after cursor)");
         if (cursor == null) {
             Log.e("Cursor", "EROROOROROOROROROROROOR");
@@ -743,11 +774,11 @@ public class MainActivity extends FragmentActivity
             Log.d("Cursor", "Not null?");
 
         }
-        startManagingCursor(cursor);
+//        startManagingCursor(cursor);
         Log.d("Cursor", "After managing cursor");
-        String[] fromFieldNames = new String[]{MedicationDatabaseSQLiteHandler.KEY_BRANDNAME, MedicationDatabaseSQLiteHandler.KEY_GENERICNAME,
-                MedicationDatabaseSQLiteHandler.KEY_PERDOSAGE, MedicationDatabaseSQLiteHandler.KEY_DOSAGEFORM,
-                MedicationDatabaseSQLiteHandler.KEY_TOTALDOSAGE, MedicationDatabaseSQLiteHandler.KEY_CONSUMPTIONTIME};
+        String[] fromFieldNames = new String[]{MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME, MedicationDatabaseSQLiteHandler.KEY_GENERIC_NAME,
+                MedicationDatabaseSQLiteHandler.KEY_PER_DOSAGE, MedicationDatabaseSQLiteHandler.KEY_DOSAGE_FORM,
+                MedicationDatabaseSQLiteHandler.KEY_TOTAL_DOSAGE, MedicationDatabaseSQLiteHandler.KEY_CONSUMPTION_TIME};
         int[] toViewIDs = new int[]
                 {R.id.list_BrandName, R.id.list_GenericName, R.id.list_PerDosage, R.id.list_DosageForm, R.id.List_TotalDosage,
                         R.id.list_ConsumptionTime};
@@ -760,6 +791,7 @@ public class MainActivity extends FragmentActivity
                         cursor,                    // cursor (set of DB records to map)
                         fromFieldNames,            // DB Column names
                         toViewIDs                // View IDs to put information in
+//                        0
                 );
 
 
@@ -772,16 +804,16 @@ public class MainActivity extends FragmentActivity
         } else {
             Log.e("DEBUG", "fragment is NULL");
         }
-
+//        cursor.close();
     }
 
     public void displayToastForId(long idInDB) {
         Log.d("displayToastForId", "Entered");
-        Cursor cursor = dbHandler.getRow(idInDB);
+        Cursor cursor = medicationDBHandler.getRow(idInDB);
         if (cursor != null) {
 
             if (cursor.moveToFirst()) {
-                String info_administration = cursor.getString(MedicationDatabaseSQLiteHandler.COL_ADMINISTRATION);
+                String info_administration = cursor.getString(cursor.getColumnIndex("Administration"));//MedicationDatabaseSQLiteHandler.COL_ADMINISTRATION);
 
                 new AlertDialog.Builder(this)
                         .setTitle("Administration")
@@ -804,19 +836,19 @@ public class MainActivity extends FragmentActivity
 
     public void deleteId(long idInDB) {
         Log.d("displayToastForId", "Entered");
-        Cursor cursor = dbHandler.getRow(idInDB);
+        Cursor cursor = medicationDBHandler.getRow(idInDB);
         if (cursor != null) {
 
             if (cursor.moveToFirst()) {
-                final long idDB = cursor.getLong(MedicationDatabaseSQLiteHandler.COL_ROWID);
-                final String info_BrandName = cursor.getString(MedicationDatabaseSQLiteHandler.COL_BRANDNAME);
+                final long idDB = cursor.getLong(cursor.getColumnIndex("_id"));//MedicationDatabaseSQLiteHandler.COL_ROWID);
+                final String info_BrandName = cursor.getString(cursor.getColumnIndex("BrandName"));//MedicationDatabaseSQLiteHandler.COL_BRANDNAME);
 
                 new AlertDialog.Builder(this)
                         .setTitle("Delete Medication?")
                         .setMessage("Delete " + info_BrandName + "?")
                         .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int which) {
-                                dbHandler.deleteMedicationObject(idDB);
+                                medicationDBHandler.deleteMedicationObject(idDB);
                                 Toast.makeText(MainActivity.this, info_BrandName + " has been deleted.", Toast.LENGTH_LONG).show();
                             }
                         })
