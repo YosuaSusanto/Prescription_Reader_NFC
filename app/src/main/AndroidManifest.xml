@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.reico_000.prescriptionreadernfc" >
 
     <application
@@ -14,9 +15,11 @@
             android:launchMode="singleTop"
             android:windowSoftInputMode="adjustPan" >
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
+                <action
+                    android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
+                <category
+                    android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
         <activity
@@ -32,7 +35,8 @@
             android:launchMode="singleTop">
 
             <intent-filter>
-                <action android:name="android.nfc.action.TECH_DISCOVERED" />
+                <action
+                    android:name="android.nfc.action.TECH_DISCOVERED" />
             </intent-filter>
 
             <meta-data
@@ -40,14 +44,17 @@
                 android:resource="@xml/nfc_tech_filter" />
 
         </activity>
-        <receiver android:name=".NotificationBarAlarm" />
+        <receiver
+            android:name=".NotificationBarAlarm" />
         <receiver
             android:name=".AlarmReceiver"
             android:enabled="true"
             android:exported="true" >
             <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action
+                    android:name="android.intent.action.BOOT_COMPLETED" />
+                <action
+                    android:name="android.intent.action.QUICKBOOT_POWERON" />
             </intent-filter>
         </receiver>
 
@@ -56,14 +63,41 @@
             android:enabled="true"
             android:exported="true" />
 
+        <service
+            android:name="com.example.reico_000.prescriptionreadernfc.AuthenticatorService">
+            <intent-filter>
+                <action android:name="android.accounts.AccountAuthenticator"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.accounts.AccountAuthenticator"
+                android:resource="@xml/authenticator" />
+        </service>
+
+        <provider
+            android:name="MedicationProvider"
+            android:authorities="com.example.reico_000.prescriptionreadernfc.provider"
+            android:exported="false"
+            android:syncable="true"
+            android:grantUriPermissions="true"
+            android:label="MedicationProvider"
+            android:readPermission="com.example.reico_000.prescriptionreadernfc.READ"
+            android:writePermission="com.example.reico_000.prescriptionreadernfc.WRITE" />
+
     </application>
 
-    <uses-permission android:name="android.permission.NFC" />
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <uses-permission
+        android:name="android.permission.NFC" />
+    <uses-permission
+        android:name="android.permission.INTERNET" />
+    <uses-permission
+        android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission
+        android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission
+        android:name="android.permission.WAKE_LOCK" />
+    <uses-permission
+        android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <uses-feature
         android:name="android.hardware.nfc"

@@ -60,7 +60,7 @@ public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
     public static final String KEY_CONSUMPTION_TIME = "ConsumptionTime";
     public static final String KEY_PATIENT_ID = "PatientID";
     public static final String KEY_ADMINISTRATION = "Administration";
-    public static final String[] ALL_KEYS = new String[] {KEY_ID, KEY_BRAND_NAME, KEY_GENERIC_NAME, KEY_DOSAGE_FORM, KEY_PER_DOSAGE, KEY_TOTAL_DOSAGE,
+    public static final String[] ALL_MED_KEYS = new String[] {KEY_ID, KEY_BRAND_NAME, KEY_GENERIC_NAME, KEY_DOSAGE_FORM, KEY_PER_DOSAGE, KEY_TOTAL_DOSAGE,
             KEY_CONSUMPTION_TIME, KEY_PATIENT_ID, KEY_ADMINISTRATION};
 
     // Consumptions table column names
@@ -174,7 +174,7 @@ public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
     public Cursor getRow(long rowId) {
         SQLiteDatabase db = this.getWritableDatabase();
         String where = KEY_ID + "=" + rowId;
-        Cursor c = 	db.query(true, TABLE_MEDICATIONS, ALL_KEYS,
+        Cursor c = 	db.query(true, TABLE_MEDICATIONS, ALL_MED_KEYS,
                 where, null, null, null, null, null);
         if (c != null) {
             c.moveToFirst();
@@ -257,13 +257,16 @@ public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
         }
     }
 
-    public ConsumptionDetailsObject getConsumptionDetails(String patientId, String brandName, String genericName) {
+    public ConsumptionDetailsObject getConsumptionDetails(String brandName, String genericName, String patientId) {
         int med_id = 0;
         ConsumptionDetailsObject consumptionObject = null;
         SQLiteDatabase db = this.getWritableDatabase();
+        String selection = KEY_BRAND_NAME + " = ? AND " + KEY_GENERIC_NAME + " = ? AND " + KEY_PATIENT_ID + " = ?";
+        String[] selectionArgs = new String[]{brandName, genericName, patientId};
         String addQuery = "SELECT * FROM " + TABLE_MEDICATIONS + " WHERE " + KEY_BRAND_NAME + " = '" + brandName + "' AND " +
                 KEY_GENERIC_NAME + " = '" + genericName + "' AND " + KEY_PATIENT_ID + " = '" + patientId + "'";
-        Cursor c = db.rawQuery(addQuery, null);
+//        Cursor c = db.rawQuery(addQuery, null);
+        Cursor c = db.query(TABLE_MEDICATIONS, ALL_MED_KEYS, selection, selectionArgs, null, null, null);
         if (c != null) {
             if (c.moveToFirst()) {
                 med_id = c.getInt(c.getColumnIndex(KEY_ID));

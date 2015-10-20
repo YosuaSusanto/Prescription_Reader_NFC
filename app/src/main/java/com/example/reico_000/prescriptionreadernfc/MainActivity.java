@@ -8,6 +8,9 @@ import android.app.AlertDialog;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.PendingIntent;
+import android.content.ContentResolver;
+import android.content.ContentUris;
+import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -89,33 +92,9 @@ public class MainActivity extends FragmentActivity
         medicationDBHandler = MedicationDatabaseSQLiteHandler.getInstance(this);
         session  = new SessionManager(getApplicationContext());
 
-        /**
-         * CRUD Operations
-         //         * */
-//        Inserting Contacts
-//        Log.d("Delete", "Deletingggg");
-//        db.deleteMedicationObject("Tykerb");
-//        db.deleteMedicationObject("Capecitabine");
-//        db.deleteMedicationObject("Test Brand Name");
-//
-//        Log.d("Insert: ", "Inserting ..");
-//        db.addMedication(new MedicationObject("Tykerb", "Laptinib", "250mg Pill", "5", "105", "ME", "105440102"));
-
         Bundle extras = getIntent().getExtras();
         if (extras != null) {
             PatientID = extras.getString("patient_id");
-        }
-        // Reading all contacts
-        Log.d("Reading: ", "Reading all contacts..");
-        List<MedicationObject> medObjects = medicationDBHandler.getAllMedications();
-
-        for (MedicationObject medicationObject : medObjects) {
-            String log = "UID: " + medicationObject.get_ID() + " ,BrandName: " + medicationObject.get_brandName() + " ," +
-                    " GenericName: " + medicationObject.get_genericName() + " DosageForm: " + medicationObject.get_dosageForm()
-                    + " PerDosage: " + medicationObject.get_perDosage() + " TotalDosage: " + medicationObject.get_totalDosage()
-                    + " ConsumptionTime: " + medicationObject.get_consumptionTime() + " PatientID: " + medicationObject.get_patientID();
-            // Writing Contacts to log
-            Log.d("Name: ", log);
         }
 
         mNavigationDrawerFragment = (NavigationDrawerFragment)
@@ -518,9 +497,16 @@ public class MainActivity extends FragmentActivity
             BrandName = "Capecitabine";
             GenericName = "Xeloda";
         }
-        ConsumptionDetailsObject consumptionObject = medicationDBHandler.getConsumptionDetails(PatientID, BrandName, GenericName);
-        DosageForm = Integer.toString(consumptionObject.get_medicationID());
-        PerDosage = consumptionObject.get_consumedAt();
+        ConsumptionDetailsObject consumptionObject = medicationDBHandler.getConsumptionDetails(BrandName, GenericName, PatientID);
+        if (consumptionObject != null){
+            DosageForm = Integer.toString(consumptionObject.get_medicationID());
+            PerDosage = consumptionObject.get_consumedAt();
+        } else {
+            BrandName = "";
+            GenericName = "";
+            DosageForm = "";
+            PerDosage = "";
+        }
         TotalDosage = "";
         ConsumptionTime = "";
         Administration = "";
@@ -601,7 +587,18 @@ public class MainActivity extends FragmentActivity
         Log.d("Respond", "ConsumeMedTest Works");
 
         if ((!BrandName.equals("")) && (!DosageForm.equals(""))) {
-            Cursor cursor = medicationDBHandler.getByNameAndDosageForm(BrandName, DosageForm);
+            ContentResolver resolver = getContentResolver();
+            Uri uri = MedicationContract.Medications.CONTENT_URI;
+            String[] projection = new String[]{medicationDBHandler.KEY_ID, medicationDBHandler.KEY_TOTAL_DOSAGE,
+                    medicationDBHandler.KEY_BRAND_NAME, medicationDBHandler.KEY_DOSAGE_FORM};
+            String selection = medicationDBHandler.KEY_BRAND_NAME + " = ? AND " + medicationDBHandler.KEY_DOSAGE_FORM + " = ?";
+            String[] selectionArgs = new String[]{BrandName, DosageForm};
+            Cursor cursor =
+                    resolver.query(uri,
+                            projection,
+                            selection,
+                            selectionArgs,
+                            null);
             if (cursor != null) {
                 long saved_Id = -1;
                 int saved_TotalDosage = -1;
@@ -614,8 +611,18 @@ public class MainActivity extends FragmentActivity
                 Toast.makeText(this, "saved_ID = " + saved_Id, Toast.LENGTH_SHORT);
                 int effectiveTotalDosage = saved_TotalDosage - Integer.parseInt(PerDosage);
                 if (saved_Id > -1) {
-                    medicationDBHandler.addConsumptionDetails(PatientID, BrandName, GenericName, getCurrentTimeStamp());
-                    medicationDBHandler.updateRow(saved_Id, effectiveTotalDosage);
+                    ContentValues values = new ContentValues();
+                    values.put(medicationDBHandler.KEY_MEDICATION_ID, saved_Id);
+                    values.put(medicationDBHandler.KEY_CONSUMED_AT, getCurrentTimeStamp());
+                    resolver.insert(MedicationContract.Consumption.CONTENT_URI, values);
+
+                    String where = medicationDBHandler.KEY_ID + " = " + saved_Id;
+                    values.clear();
+                    values.put(medicationDBHandler.KEY_TOTAL_DOSAGE, effectiveTotalDosage);
+                    uri = ContentUris.withAppendedId(MedicationContract.Medications.CONTENT_URI, saved_Id);
+//                    uri = ContentUris.withAppendedId(Uri.parse(MedicationContract.Medications.CONTENT_TYPE), saved_Id);
+                    long noUpdated = resolver.update(uri, values, where, null);
+//                    medicationDBHandler.updateRow(saved_Id, effectiveTotalDosage);
 
                     // Update online database with updated effectiveTotalDosage
 //                    try{
@@ -639,7 +646,10 @@ public class MainActivity extends FragmentActivity
                     // If effectiveTotal Dosage is <1, delete medicine
                     // else just notify user consumption successful
                     if (effectiveTotalDosage < 1) {
-                        medicationDBHandler.deleteMedicationObject(saved_Id);
+                        long noDeleted = resolver.delete
+                                (MedicationContract.Medications.CONTENT_URI,
+                                        medicationDBHandler.KEY_ID + " = ? ",
+                                        new String[]{String.valueOf(saved_Id)});
                         new AlertDialog.Builder(this)
                                 .setTitle("Medication Course Completed")
                                 .setMessage("Medication Consumption Completed\n" +
@@ -681,6 +691,7 @@ public class MainActivity extends FragmentActivity
                 }
 
             }
+            cursor.close();
         } else {
             new AlertDialog.Builder(this)
                     .setTitle("Error!")
@@ -700,7 +711,18 @@ public class MainActivity extends FragmentActivity
         Log.d("Insert: ", "Saved Medication Inserting ..");
         medicationDBHandler = MedicationDatabaseSQLiteHandler.getInstance(this);
         if (!BrandName.equals("")) {
-            Cursor cursor = medicationDBHandler.getByNameAndDosageForm(BrandName, DosageForm);
+            ContentResolver resolver = getContentResolver();
+            Uri uri = MedicationContract.Medications.CONTENT_URI;
+            String[] projection = new String[]{medicationDBHandler.KEY_ID, medicationDBHandler.KEY_TOTAL_DOSAGE,
+                    medicationDBHandler.KEY_BRAND_NAME, medicationDBHandler.KEY_DOSAGE_FORM};
+            String selection = medicationDBHandler.KEY_BRAND_NAME + " = ? AND " + medicationDBHandler.KEY_DOSAGE_FORM + " = ?";
+            String[] selectionArgs = new String[]{BrandName, DosageForm};
+            Cursor cursor =
+                    resolver.query(uri,
+                            projection,
+                            selection,
+                            selectionArgs,
+                            null);
             long saved_Id = -1;
             int saved_TotalDosage = -1;
 
@@ -709,9 +731,14 @@ public class MainActivity extends FragmentActivity
                 saved_TotalDosage = cursor.getInt(cursor.getColumnIndex("TotalDosage"));//MedicationDatabaseSQLiteHandler.COL_TOTALDOSAGE);
             }
             cursor.close();
+            ContentValues values = new ContentValues();
             if (saved_Id > -1) {
                 int effectiveTotalDosage = saved_TotalDosage + Integer.parseInt(TotalDosage);
-                medicationDBHandler.updateRow(saved_Id, effectiveTotalDosage);
+                values.clear();
+                String where = medicationDBHandler.KEY_ID + " = " + saved_Id;
+                values.put(medicationDBHandler.KEY_TOTAL_DOSAGE, effectiveTotalDosage);
+                uri = ContentUris.withAppendedId(MedicationContract.Medications.CONTENT_URI, saved_Id);
+                long noUpdated = resolver.update(uri, values, where, null);
                 new AlertDialog.Builder(this)
                         .setTitle("Additional Dosages added")
                         .setMessage("Medication Exists in Inventory.\nAdditional Dosages added!")
@@ -723,8 +750,17 @@ public class MainActivity extends FragmentActivity
                         .setIcon(android.R.drawable.ic_dialog_alert)
                         .show();
             } else {
-                medicationDBHandler.addMedication(new MedicationObject(BrandName, GenericName, DosageForm, PerDosage, TotalDosage,
-                        ConsumptionTime, PatientID, Administration));
+                values.clear();
+                values.put(medicationDBHandler.KEY_BRAND_NAME, BrandName);
+                values.put(medicationDBHandler.KEY_GENERIC_NAME, GenericName);
+                values.put(medicationDBHandler.KEY_DOSAGE_FORM, DosageForm);
+                values.put(medicationDBHandler.KEY_PER_DOSAGE, PerDosage);
+                values.put(medicationDBHandler.KEY_TOTAL_DOSAGE, TotalDosage);
+                values.put(medicationDBHandler.KEY_CONSUMPTION_TIME, ConsumptionTime);
+                values.put(medicationDBHandler.KEY_PATIENT_ID, PatientID);
+                values.put(medicationDBHandler.KEY_ADMINISTRATION, Administration);
+                resolver.insert(MedicationContract.Medications.CONTENT_URI, values);
+
                 Log.d("Insert: ", "Saved Medication Successful!");
                 new AlertDialog.Builder(this)
                         .setTitle("New Medication")
@@ -760,13 +796,19 @@ public class MainActivity extends FragmentActivity
         PerDosage = "";
         TotalDosage = "";
         ConsumptionTime = "";
-        //PatientID = "";
         Administration = "";
     }
 
     private void populateListViewfromdb() {
         Log.d("Test", "populateListViewfromdb entered");
-        Cursor cursor = medicationDBHandler.getAllRows();
+        ContentResolver resolver = getContentResolver();
+        String[] projection = medicationDBHandler.ALL_MED_KEYS;
+        Cursor cursor =
+                resolver.query(MedicationContract.Medications.CONTENT_URI,
+                        projection,
+                        null,
+                        null,
+                        null);
         Log.d("Test", "populateListViewfromdb entered(after cursor)");
         if (cursor == null) {
             Log.e("Cursor", "EROROOROROOROROROROROOR");
@@ -809,7 +851,16 @@ public class MainActivity extends FragmentActivity
 
     public void displayToastForId(long idInDB) {
         Log.d("displayToastForId", "Entered");
-        Cursor cursor = medicationDBHandler.getRow(idInDB);
+        ContentResolver resolver = getContentResolver();
+        String[] projection = medicationDBHandler.ALL_MED_KEYS;
+        String selection = medicationDBHandler.KEY_ID + " = ?";
+        String[] selectionArgs = new String[]{String.valueOf(idInDB)};
+        Cursor cursor =
+                resolver.query(MedicationContract.Medications.CONTENT_URI,
+                        projection,
+                        selection,
+                        selectionArgs,
+                        null);
         if (cursor != null) {
 
             if (cursor.moveToFirst()) {
@@ -828,15 +879,24 @@ public class MainActivity extends FragmentActivity
 
                 //Toast.makeText(MainActivity.this, message, Toast.LENGTH_LONG).show();
             }
-            cursor.close();
         } else {
             Log.e("displayToastForId", "Cursor is nullllll");
         }
+        cursor.close();
     }
 
     public void deleteId(long idInDB) {
         Log.d("displayToastForId", "Entered");
-        Cursor cursor = medicationDBHandler.getRow(idInDB);
+        ContentResolver resolver = getContentResolver();
+        String[] projection = medicationDBHandler.ALL_MED_KEYS;
+        String selection = medicationDBHandler.KEY_ID + " = ?";
+        String[] selectionArgs = new String[]{String.valueOf(idInDB)};
+        Cursor cursor =
+                resolver.query(MedicationContract.Medications.CONTENT_URI,
+                        projection,
+                        selection,
+                        selectionArgs,
+                        null);
         if (cursor != null) {
 
             if (cursor.moveToFirst()) {
@@ -848,7 +908,11 @@ public class MainActivity extends FragmentActivity
                         .setMessage("Delete " + info_BrandName + "?")
                         .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int which) {
-                                medicationDBHandler.deleteMedicationObject(idDB);
+                                ContentResolver resolver1 = getContentResolver();
+                                long noDeleted = resolver1.delete
+                                        (MedicationContract.Medications.CONTENT_URI,
+                                                medicationDBHandler.KEY_ID + " = ? ",
+                                                new String[]{String.valueOf(idDB)});
                                 Toast.makeText(MainActivity.this, info_BrandName + " has been deleted.", Toast.LENGTH_LONG).show();
                             }
                         })
@@ -865,6 +929,7 @@ public class MainActivity extends FragmentActivity
         } else {
             Log.e("displayToastForId", "Cursor is nullllll");
         }
+        cursor.close();
     }
 
     public static String getCurrentTimeStamp(){
