@@ -33,6 +33,11 @@ import helper.UserDatabaseSQLiteHandler;
 import com.example.reico_000.prescriptionreadernfc.R;
 import com.example.reico_000.prescriptionreadernfc.AppConfig;
 import com.example.reico_000.prescriptionreadernfc.VolleyController;
+import com.parse.LogInCallback;
+import com.parse.ParseException;
+import com.parse.ParseObject;
+import com.parse.ParseUser;
+
 import helper.UserDatabaseSQLiteHandler;
 import helper.SessionManager;
 
@@ -50,6 +55,10 @@ public class LoginActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+
+        ParseObject testObject = new ParseObject("TestObject");
+        testObject.put("foo2", "bar2");
+        testObject.saveInBackground();
 
         inputName = (EditText) findViewById(R.id.name);
         inputPassword = (EditText) findViewById(R.id.password);
@@ -82,9 +91,44 @@ public class LoginActivity extends Activity {
                 String password = inputPassword.getText().toString().trim();
 
                 // Check for empty data in the form
+//                if (!name.isEmpty() && !password.isEmpty()) {
+//                    // login user
+//                    checkLogin(name, password);
+//                } else {
+//                    // Prompt user to enter credentials
+//                    Toast.makeText(getApplicationContext(),
+//                            "Please enter the credentials!", Toast.LENGTH_LONG)
+//                            .show();
+//                }
                 if (!name.isEmpty() && !password.isEmpty()) {
-                    // login user
-                    checkLogin(name, password);
+                    pDialog.setMessage("Logging in ...");
+                    showDialog();
+
+                    ParseUser.logInInBackground(name, password,
+                            new LogInCallback() {
+                                public void done(ParseUser user, ParseException e) {
+                                    if (user != null) {
+                                        hideDialog();
+                                        session.setLogin(true);
+                                        // If user exist and authenticated, send user to Welcome.class
+                                        Intent intent = new Intent(
+                                                LoginActivity.this,
+                                                MainActivity.class);
+                                        intent.putExtra("patient_id", user.getInt("patient_id"));
+                                        startActivity(intent);
+                                        Toast.makeText(getApplicationContext(),
+                                                "Successfully Logged in",
+                                                Toast.LENGTH_LONG).show();
+                                        finish();
+                                    } else {
+                                        hideDialog();
+                                        Toast.makeText(
+                                                getApplicationContext(),
+                                                "No such user exist, please signup",
+                                                Toast.LENGTH_LONG).show();
+                                    }
+                                }
+                            });
                 } else {
                     // Prompt user to enter credentials
                     Toast.makeText(getApplicationContext(),
