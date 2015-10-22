@@ -33,10 +33,6 @@ import helper.UserDatabaseSQLiteHandler;
 import com.example.reico_000.prescriptionreadernfc.R;
 import com.example.reico_000.prescriptionreadernfc.AppConfig;
 import com.example.reico_000.prescriptionreadernfc.VolleyController;
-import com.parse.LogInCallback;
-import com.parse.ParseException;
-import com.parse.ParseObject;
-import com.parse.ParseUser;
 
 import helper.UserDatabaseSQLiteHandler;
 import helper.SessionManager;
@@ -87,43 +83,9 @@ public class LoginActivity extends Activity {
                 String password = inputPassword.getText().toString().trim();
 
                 // Check for empty data in the form
-//                if (!name.isEmpty() && !password.isEmpty()) {
-//                    // login user
-//                    checkLogin(name, password);
-//                } else {
-//                    // Prompt user to enter credentials
-//                    Toast.makeText(getApplicationContext(),
-//                            "Please enter the credentials!", Toast.LENGTH_LONG)
-//                            .show();
-//                }
                 if (!name.isEmpty() && !password.isEmpty()) {
-                    pDialog.setMessage("Logging in ...");
-                    showDialog();
-
-                    ParseUser.logInInBackground(name, password,
-                            new LogInCallback() {
-                                public void done(ParseUser user, ParseException e) {
-                                    if (user != null) {
-                                        hideDialog();
-                                        session.setLogin(true);
-                                        // If user exist and authenticated, send user to Welcome.class
-                                        Intent intent = new Intent(
-                                                LoginActivity.this,
-                                                MainActivity.class);
-                                        startActivity(intent);
-                                        Toast.makeText(getApplicationContext(),
-                                                "Successfully Logged in",
-                                                Toast.LENGTH_LONG).show();
-                                        finish();
-                                    } else {
-                                        hideDialog();
-                                        Toast.makeText(
-                                                getApplicationContext(),
-                                                "Login credentials are wrong. Please try again!",
-                                                Toast.LENGTH_LONG).show();
-                                    }
-                                }
-                            });
+                    // login user
+                    checkLogin(name, password);
                 } else {
                     // Prompt user to enter credentials
                     Toast.makeText(getApplicationContext(),
