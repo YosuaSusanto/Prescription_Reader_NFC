@@ -56,10 +56,6 @@ public class LoginActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        ParseObject testObject = new ParseObject("TestObject");
-        testObject.put("foo2", "bar2");
-        testObject.saveInBackground();
-
         inputName = (EditText) findViewById(R.id.name);
         inputPassword = (EditText) findViewById(R.id.password);
         btnLogin = (Button) findViewById(R.id.btnLogin);
@@ -114,7 +110,6 @@ public class LoginActivity extends Activity {
                                         Intent intent = new Intent(
                                                 LoginActivity.this,
                                                 MainActivity.class);
-                                        intent.putExtra("patient_id", user.getInt("patient_id"));
                                         startActivity(intent);
                                         Toast.makeText(getApplicationContext(),
                                                 "Successfully Logged in",
@@ -124,7 +119,7 @@ public class LoginActivity extends Activity {
                                         hideDialog();
                                         Toast.makeText(
                                                 getApplicationContext(),
-                                                "No such user exist, please signup",
+                                                "Login credentials are wrong. Please try again!",
                                                 Toast.LENGTH_LONG).show();
                                     }
                                 }

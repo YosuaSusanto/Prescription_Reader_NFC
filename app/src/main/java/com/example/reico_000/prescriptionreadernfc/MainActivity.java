@@ -459,6 +459,7 @@ public class MainActivity extends FragmentActivity
 
                 public void onClick(DialogInterface dialog, int whichButton) {
                     session.setLogin(false);
+                    ParseUser.logOutInBackground();
                     Toast.makeText(getApplicationContext(), "Logout successful", Toast.LENGTH_LONG).show();
                     Intent intent = new Intent(MainActivity.this, LoginActivity.class);
                     startActivity(intent);
