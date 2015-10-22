@@ -44,6 +44,8 @@ import android.nfc.tech.Ndef;
 import android.os.AsyncTask;
 import android.widget.Toast;
 
+import com.parse.ParseUser;
+
 import helper.SessionManager;
 
 
@@ -58,13 +60,14 @@ public class MainActivity extends FragmentActivity
     public String PerDosage = "";
     public String TotalDosage = "";
     public String ConsumptionTime = "";
-    public String PatientID = "43462553";
+    public String PatientID = "";
     public String Administration = "";
     private PendingIntent pendingIntent;
     private PendingIntent pendingIntentAlarm;
     private MedicationDatabaseSQLiteHandler medicationDBHandler;
     private Connection connectionSQL = null;
 
+    private ParseUser currentUser;
     private SessionManager session;
     /**
      * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
@@ -91,10 +94,14 @@ public class MainActivity extends FragmentActivity
         StrictMode.setThreadPolicy(policy);
         medicationDBHandler = MedicationDatabaseSQLiteHandler.getInstance(this);
         session  = new SessionManager(getApplicationContext());
-
-        Bundle extras = getIntent().getExtras();
-        if (extras != null) {
-            PatientID = extras.getString("patient_id");
+        currentUser = ParseUser.getCurrentUser();
+        if (currentUser != null) {
+            int patientId = currentUser.getInt("patient_id");
+            PatientID = String.valueOf(patientId);
+        } else {
+            Toast.makeText(getApplicationContext(),
+                    "currentUser is null",
+                    Toast.LENGTH_LONG).show();
         }
 
         mNavigationDrawerFragment = (NavigationDrawerFragment)
@@ -452,6 +459,7 @@ public class MainActivity extends FragmentActivity
 
                 public void onClick(DialogInterface dialog, int whichButton) {
                     session.setLogin(false);
+                    ParseUser.logOutInBackground();
                     Toast.makeText(getApplicationContext(), "Logout successful", Toast.LENGTH_LONG).show();
                     Intent intent = new Intent(MainActivity.this, LoginActivity.class);
                     startActivity(intent);
