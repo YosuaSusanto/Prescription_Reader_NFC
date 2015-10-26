@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">Prescription Reader NFC</string>
     <string name="account_type">com.example.reico_000.prescriptionreadernfc.account</string>
+    <string name="provider_authority">com.example.reico_000.prescriptionreadernfc.provider</string>
 
     <string name="title_section1">Scanning</string>
     <string name="title_section2">Inventory</string>
