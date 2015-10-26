@@ -1,11 +1,13 @@
 package com.example.reico_000.prescriptionreadernfc;
 
+import android.content.ContentValues;
+import android.database.Cursor;
+
 /**
  * Created by reico_000 on 14/3/2015.
  */
 public class MedicationObject {
 
-    int _ID = -1;
     String _patientID ="";
     String _brandName = "";
     String _genericName = "";
@@ -32,10 +34,6 @@ public class MedicationObject {
         this._consumptionTime = consumptionTime;
         this._patientID = patientID;
         this._administration = administration;
-    }
-
-    public int get_ID(){
-        return this._ID;
     }
 
     public String get_brandName(){
@@ -70,7 +68,37 @@ public class MedicationObject {
         return this._administration;
     }
 
-    public void set_ID(int UID){
-        this._ID = UID;
+    /**
+     * Convenient method to get the objects data members in ContentValues object.
+     * This will be useful for Content Provider operations,
+     * which use ContentValues object to represent the data.
+     *
+     * @return
+     */
+    public ContentValues getContentValues() {
+        ContentValues values = new ContentValues();
+        values.put(MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME, _brandName);
+        values.put(MedicationDatabaseSQLiteHandler.KEY_GENERIC_NAME, _genericName);
+        values.put(MedicationDatabaseSQLiteHandler.KEY_DOSAGE_FORM, _dosageForm);
+        values.put(MedicationDatabaseSQLiteHandler.KEY_PER_DOSAGE, _perDosage);
+        values.put(MedicationDatabaseSQLiteHandler.KEY_TOTAL_DOSAGE, _totalDosage);
+        values.put(MedicationDatabaseSQLiteHandler.KEY_CONSUMPTION_TIME, _consumptionTime);
+        values.put(MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID, _patientID);
+        values.put(MedicationDatabaseSQLiteHandler.KEY_ADMINISTRATION, _administration);
+        return values;
+    }
+
+    // Create a MedicationObject object from a cursor
+    public static MedicationObject fromCursor(Cursor curMedication) {
+        String brandName = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME));
+        String genericName = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_GENERIC_NAME));
+        String dosageForm = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_DOSAGE_FORM));
+        String perDosage = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_PER_DOSAGE));
+        String totalDosage = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_TOTAL_DOSAGE));
+        String consumptionTime = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_CONSUMPTION_TIME));
+        String patientID = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID));
+        String administration = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_ADMINISTRATION));
+
+        return new MedicationObject(brandName, genericName, dosageForm, perDosage, totalDosage, consumptionTime, patientID, administration);
     }
 }
