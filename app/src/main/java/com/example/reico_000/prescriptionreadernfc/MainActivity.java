@@ -1,5 +1,7 @@
 package com.example.reico_000.prescriptionreadernfc;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.app.Activity;
 
 import android.app.ActionBar;
@@ -11,6 +13,7 @@ import android.app.PendingIntent;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -80,8 +83,16 @@ public class MainActivity extends FragmentActivity
     public static final String TAG = "NfcDemo";
     private TextView mTextView;
     private NfcAdapter mNfcAdapter;
+    private Account mAccount;
 
     private AlarmManager manager;
+    // Constants
+    // The authority for the sync adapter's content provider
+    public static final String AUTHORITY = MedicationContract.AUTHORITY;
+    // An account type, in the form of a domain name
+    public static final String ACCOUNT_TYPE = "com.example.reico_000.prescriptionreadernfc.account";
+    // The account name
+    public static final String ACCOUNT = "dummyaccount";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,11 +103,16 @@ public class MainActivity extends FragmentActivity
         medicationDBHandler = MedicationDatabaseSQLiteHandler.getInstance(this);
         session  = new SessionManager(getApplicationContext());
 
-        Bundle extras = getIntent().getExtras();
-        if (extras != null) {
-            PatientID = extras.getString("patient_id");
-        }
+        // Create the dummy account
+        mAccount = CreateSyncAccount(this);
 
+        PatientID = session.getPatientID();
+        if (PatientID == "") {
+            // Launch main activity
+            Intent intent = new Intent(MainActivity.this,
+                    LoginActivity.class);
+            startActivity(intent);
+        }
         mNavigationDrawerFragment = (NavigationDrawerFragment)
                 getFragmentManager().findFragmentById(R.id.navigation_drawer);
         mTitle = getTitle();
@@ -125,7 +141,42 @@ public class MainActivity extends FragmentActivity
 
         handleIntent(getIntent());
     }
+    /**
+     * Create a new dummy account for the sync adapter
+     *
+     * @param context The application context
+     */
+    public static Account CreateSyncAccount(Context context) {
+        // Create the account type and default account
+        Account newAccount = new Account(
+                ACCOUNT, ACCOUNT_TYPE);
+        // Get an instance of the Android account manager
+        AccountManager accountManager =
+                (AccountManager) context.getSystemService(
+                        ACCOUNT_SERVICE);
 
+//        AccountManager accountManager = AccountManager.get(context.getApplicationContext());
+        /*
+         * Add the account and account type, no password or user data
+         * If successful, return the Account object, otherwise report an error.
+         */
+        if (accountManager.addAccountExplicitly(newAccount, null, null)) {
+            /*
+             * If you don't set android:syncable="true" in
+             * in your <provider> element in the manifest,
+             * then call context.setIsSyncable(account, AUTHORITY, 1)
+             * here.
+             */
+            return newAccount;
+        } else {
+            /*
+             * The account exists or some other error occurred. Log this, report it,
+             * or handle it internally.
+             */
+            Log.e("ERROR", "Account already exists or other error occured");
+            return null;
+        }
+    }
     private void handleIntent(Intent intent) {
         String action = intent.getAction();
 
@@ -187,6 +238,7 @@ public class MainActivity extends FragmentActivity
         if (useNFC) {
             setupForegroundDispatch(this, mNfcAdapter);
         }
+//        getContentResolver().requestSync(mAccount, MedicationContract.AUTHORITY, extras);
     }
 
     @Override
@@ -452,6 +504,7 @@ public class MainActivity extends FragmentActivity
 
                 public void onClick(DialogInterface dialog, int whichButton) {
                     session.setLogin(false);
+                    session.setPatientID("");
                     Toast.makeText(getApplicationContext(), "Logout successful", Toast.LENGTH_LONG).show();
                     Intent intent = new Intent(MainActivity.this, LoginActivity.class);
                     startActivity(intent);

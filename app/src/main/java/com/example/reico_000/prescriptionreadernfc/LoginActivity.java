@@ -34,8 +34,6 @@ import com.example.reico_000.prescriptionreadernfc.R;
 import com.example.reico_000.prescriptionreadernfc.AppConfig;
 import com.example.reico_000.prescriptionreadernfc.VolleyController;
 
-import helper.UserDatabaseSQLiteHandler;
-import helper.SessionManager;
 
 public class LoginActivity extends Activity {
     private static final String TAG = RegisterActivity.class.getSimpleName();
@@ -66,14 +64,6 @@ public class LoginActivity extends Activity {
 
         // Session manager
         session = new SessionManager(getApplicationContext());
-
-        // Check if user is already logged in or not
-        if (session.isLoggedIn()) {
-            // User is already logged in. Take him to main activity
-            Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-            startActivity(intent);
-            finish();
-        }
 
         // Login button Click Event
         btnLogin.setOnClickListener(new View.OnClickListener() {
@@ -145,6 +135,7 @@ public class LoginActivity extends Activity {
                         String email = user.getString("email");
                         String created_at = user.getString("created_at");
                         String patient_id = user.getString("patient_id");
+                        session.setPatientID(patient_id);
 
                         // Inserting row in users table
                         db.addUser(name, email, uid, created_at, patient_id);
@@ -152,7 +143,6 @@ public class LoginActivity extends Activity {
                         // Launch main activity
                         Intent intent = new Intent(LoginActivity.this,
                                 MainActivity.class);
-                        intent.putExtra("patient_id", patient_id);
                         startActivity(intent);
                         finish();
                     } else {
@@ -192,8 +182,8 @@ public class LoginActivity extends Activity {
         };
 
         // Adding request to request queue
-        //VolleyController.getInstance().addToRequestQueue(strReq, tag_string_req);
-        Volley.newRequestQueue(this).add(strReq);
+        VolleyController.getInstance().addToRequestQueue(strReq);
+//        Volley.newRequestQueue(this).add(strReq);
     }
 
     private void showDialog() {
