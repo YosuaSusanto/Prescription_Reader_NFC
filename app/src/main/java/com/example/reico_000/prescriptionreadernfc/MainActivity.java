@@ -10,6 +10,7 @@ import android.app.AlertDialog;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.PendingIntent;
+import android.app.ProgressDialog;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -37,7 +38,9 @@ import java.sql.Connection;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;
@@ -46,6 +49,16 @@ import android.nfc.Tag;
 import android.nfc.tech.Ndef;
 import android.os.AsyncTask;
 import android.widget.Toast;
+
+import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.StringRequest;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import helper.SessionManager;
 
@@ -83,16 +96,18 @@ public class MainActivity extends FragmentActivity
     public static final String TAG = "NfcDemo";
     private TextView mTextView;
     private NfcAdapter mNfcAdapter;
-    private Account mAccount;
 
     private AlarmManager manager;
+
     // Constants
     // The authority for the sync adapter's content provider
     public static final String AUTHORITY = MedicationContract.AUTHORITY;
     // An account type, in the form of a domain name
-    public static final String ACCOUNT_TYPE = "com.example.reico_000.prescriptionreadernfc.account";
+    public static final String ACCOUNT_TYPE = "prescriptionreadernfc.account";
     // The account name
     public static final String ACCOUNT = "dummyaccount";
+    // Instance fields
+    Account mAccount;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -141,6 +156,7 @@ public class MainActivity extends FragmentActivity
 
         handleIntent(getIntent());
     }
+
     /**
      * Create a new dummy account for the sync adapter
      *
@@ -154,8 +170,6 @@ public class MainActivity extends FragmentActivity
         AccountManager accountManager =
                 (AccountManager) context.getSystemService(
                         ACCOUNT_SERVICE);
-
-//        AccountManager accountManager = AccountManager.get(context.getApplicationContext());
         /*
          * Add the account and account type, no password or user data
          * If successful, return the Account object, otherwise report an error.
@@ -167,16 +181,17 @@ public class MainActivity extends FragmentActivity
              * then call context.setIsSyncable(account, AUTHORITY, 1)
              * here.
              */
-            return newAccount;
         } else {
             /*
              * The account exists or some other error occurred. Log this, report it,
              * or handle it internally.
              */
-            Log.e("ERROR", "Account already exists or other error occured");
+            Log.e(TAG, "addAccountExplicitly fails, account might have already exists...");
             return null;
         }
+        return newAccount;
     }
+
     private void handleIntent(Intent intent) {
         String action = intent.getAction();
 
@@ -238,6 +253,11 @@ public class MainActivity extends FragmentActivity
         if (useNFC) {
             setupForegroundDispatch(this, mNfcAdapter);
         }
+
+        if (session.isLoggedIn()) {
+            populateLocalDB(PatientID);
+        }
+
 //        getContentResolver().requestSync(mAccount, MedicationContract.AUTHORITY, extras);
     }
 
@@ -425,6 +445,7 @@ public class MainActivity extends FragmentActivity
         }
     }
 
+
     public void onSectionAttached(int number) {
         switch (number) {
             case 1:
@@ -523,7 +544,7 @@ public class MainActivity extends FragmentActivity
         TotalDosage = "105";
         ConsumptionTime = "M";
         //Should the tag include patientID?? Why do we need a unique prescription for each patient?
-        PatientID = "434562553";
+//        PatientID = "43462553";
         Administration = "Should be taken on an empty stomach: Take at least 1 hr before or 1 hr after a meal. " +
                 "Do not eat/drink grapefruit products.";
         updateScanFragment();
@@ -537,7 +558,7 @@ public class MainActivity extends FragmentActivity
         TotalDosage = "28";
         ConsumptionTime = "ME";
         //Should the tag include patientID?? Why do we need a unique prescription for each patient?
-        //PatientID = "434562553";
+        //PatientID = "43462553";
         Administration = "Should be taken with food: Take w/in ½ hr after meals.";
         updateScanFragment();
     }
@@ -850,6 +871,99 @@ public class MainActivity extends FragmentActivity
         TotalDosage = "";
         ConsumptionTime = "";
         Administration = "";
+    }
+
+    /**
+     * Populate local db with medication data from server
+     * */
+    private void populateLocalDB(final String patientID) {
+        // Tag used to cancel the request
+//        String tag_string_req = "req_login";
+        medicationDBHandler = MedicationDatabaseSQLiteHandler.getInstance(this);
+        final ProgressDialog pDialog = new ProgressDialog(this);
+        pDialog.setMessage("Fetching data from server...");
+        pDialog.setCancelable(false);
+        pDialog.show();
+
+//        pDialog.setMessage("Logging in ...");
+//        showDialog();
+        medicationDBHandler = MedicationDatabaseSQLiteHandler.getInstance(this);
+
+//        JsonArrayRequest req = new JsonArrayRequest()
+        StringRequest req = new StringRequest(Request.Method.POST, AppConfig.URL_POPULATE_DB,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        Log.d(TAG, response);
+
+                        try {
+                            ContentResolver resolver = getContentResolver();
+                            ContentValues values = new ContentValues();
+
+                            // Parsing json array response
+                            // loop through each json object
+//                            jsonResponse = "";
+                            JSONArray jArr = new JSONArray(response);
+                            for (int i = 0; i < jArr.length(); i++) {
+
+                                JSONObject medication = (JSONObject) jArr.get(i);
+
+                                int id = medication.getInt("id");
+                                String brand_name = medication.getString("brand_name");
+                                String generic_name = medication.getString("generic_name");
+                                String dosage_form = medication.getString("dosage_form");
+                                String per_dosage = medication.getString("per_dosage");
+                                String total_dosage = medication.getString("total_dosage");
+                                String consumption_time = medication.getString("consumption_time");
+                                String patient_id = medication.getString("patient_id");
+                                String administration = medication.getString("administration");
+
+                                MedicationObject medObj = new MedicationObject(id, brand_name, generic_name, dosage_form,
+                                        per_dosage, total_dosage, consumption_time, patient_id, administration);
+
+                                values = medObj.getContentValues();
+                                if (!medicationDBHandler.CheckIsDataAlreadyInDBorNot(MedicationDatabaseSQLiteHandler.TABLE_MEDICATIONS,
+                                        MedicationDatabaseSQLiteHandler.KEY_ID, String.valueOf(id))) {
+                                    resolver.insert(MedicationContract.Medications.CONTENT_URI, values);
+                                }
+                                values.clear();
+                            }
+//                            txtResponse.setText(jsonResponse);
+
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                            Toast.makeText(getApplicationContext(),
+                                    "Error: " + e.getMessage(),
+                                    Toast.LENGTH_LONG).show();
+                        }
+                        pDialog.hide();
+
+//                        hidepDialog();
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+//                VolleyLog.d(TAG, "Error: " + error.getMessage());
+                Toast.makeText(getApplicationContext(),
+                        error.getMessage(), Toast.LENGTH_SHORT).show();
+                pDialog.hide();
+//                hidepDialog();
+            }
+        }) {
+
+            @Override
+            protected Map<String, String> getParams() {
+                // Posting parameters to login url
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("patient_id", patientID);
+
+                return params;
+            }
+        };
+
+        // Adding request to request queue
+        VolleyController.getInstance(this).addToRequestQueue(req);
+//        Volley.newRequestQueue(this).add(strReq);
     }
 
     private void populateListViewfromdb() {
