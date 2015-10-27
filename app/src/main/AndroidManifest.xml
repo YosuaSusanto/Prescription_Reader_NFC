@@ -4,7 +4,6 @@
     package="com.example.reico_000.prescriptionreadernfc" >
 
     <application
-        android:name="com.example.reico_000.prescriptionreadernfc.VolleyController"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -64,8 +63,29 @@
             android:enabled="true"
             android:exported="true" />
 
+        <service
+            android:name="com.example.reico_000.prescriptionreadernfc.AuthenticatorService">
+            <intent-filter>
+                <action android:name="android.accounts.AccountAuthenticator"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.accounts.AccountAuthenticator"
+                android:resource="@xml/authenticator" />
+        </service>
+
+        <service
+            android:name="com.example.reico_000.prescriptionreadernfc.SyncService"
+            android:exported="true"
+            android:process=":sync">
+            <intent-filter>
+                <action android:name="android.content.SyncAdapter"/>
+            </intent-filter>
+            <meta-data android:name="android.content.SyncAdapter"
+                android:resource="@xml/syncadapter" />
+        </service>
+
         <provider
-            android:name="MedicationProvider"
+            android:name="com.example.reico_000.prescriptionreadernfc.MedicationProvider"
             android:authorities="com.example.reico_000.prescriptionreadernfc.provider"
             android:exported="false"
             android:syncable="true"
@@ -89,6 +109,12 @@
         android:name="android.permission.WAKE_LOCK" />
     <uses-permission
         android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission
+        android:name="android.permission.READ_SYNC_SETTINGS" />
+    <uses-permission
+        android:name="android.permission.WRITE_SYNC_SETTINGS" />
+    <uses-permission
+        android:name="android.permission.AUTHENTICATE_ACCOUNTS" />
 
     <uses-feature
         android:name="android.hardware.nfc"
