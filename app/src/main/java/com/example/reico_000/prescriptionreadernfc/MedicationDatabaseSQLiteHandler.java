@@ -60,8 +60,8 @@ public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
     public static final String KEY_CONSUMPTION_TIME = "ConsumptionTime";
     public static final String KEY_PATIENT_ID = "PatientID";
     public static final String KEY_ADMINISTRATION = "Administration";
-    public static final String[] ALL_MED_KEYS = new String[] {KEY_ID, KEY_BRAND_NAME, KEY_GENERIC_NAME, KEY_DOSAGE_FORM, KEY_PER_DOSAGE, KEY_TOTAL_DOSAGE,
-            KEY_CONSUMPTION_TIME, KEY_PATIENT_ID, KEY_ADMINISTRATION};
+    public static final String[] ALL_MED_KEYS = new String[] {KEY_ID, KEY_BRAND_NAME, KEY_GENERIC_NAME, KEY_DOSAGE_FORM,
+            KEY_PER_DOSAGE, KEY_TOTAL_DOSAGE, KEY_CONSUMPTION_TIME, KEY_PATIENT_ID, KEY_ADMINISTRATION};
 
     // Consumptions table column names
     public static final String KEY_MEDICATION_ID = "MedicationID";
@@ -79,9 +79,10 @@ public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
 
 	@Override
 	public void onCreate(SQLiteDatabase db) {
-        String CREATE_MEDICATION_TABLE = "CREATE TABLE " + TABLE_MEDICATIONS + "(" + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+        String CREATE_MEDICATION_TABLE = "CREATE TABLE " + TABLE_MEDICATIONS + "(" + KEY_ID + " INTEGER PRIMARY KEY, " +
                 KEY_BRAND_NAME + " TEXT," + KEY_GENERIC_NAME + " TEXT," + KEY_DOSAGE_FORM + " TEXT," + KEY_PER_DOSAGE + " TEXT, " +
-                KEY_TOTAL_DOSAGE + " TEXT, " + KEY_CONSUMPTION_TIME + " TEXT, " + KEY_PATIENT_ID + " TEXT, " + KEY_ADMINISTRATION + " TEXT )";
+                KEY_TOTAL_DOSAGE + " TEXT, " + KEY_CONSUMPTION_TIME + " TEXT, " + KEY_PATIENT_ID + " TEXT, " +
+                KEY_ADMINISTRATION + " TEXT )";
         String CREATE_CONSUMPTION_TABLE = "CREATE TABLE " + TABLE_CONSUMPTIONS + "(" + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 KEY_MEDICATION_ID + " INTEGER," + KEY_CONSUMED_AT + " TEXT )";
 
@@ -128,10 +129,10 @@ public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
         // looping through all rows and adding to list
         if (cursor.moveToFirst()) {
             do {
-                MedicationObject medicationObject= new MedicationObject(cursor.getString(1),cursor.getString(2),cursor.getString(3), cursor.getString(4), cursor.getString(5), cursor.getString(6), cursor.getString(7), cursor.getColumnName(8));
+                MedicationObject medicationObject= new MedicationObject(cursor.getInt(0), cursor.getString(1),cursor.getString(2),cursor.getString(3), cursor.getString(4), cursor.getString(5), cursor.getString(6), cursor.getString(7), cursor.getColumnName(8));
 
                 //Do I need to put in UID?
-                medicationObject.set_ID(Integer.parseInt(cursor.getString(0)));
+//                medicationObject.set_ID(Integer.parseInt(cursor.getString(0)));
                 // Adding contact to list
                 medicationList.add(medicationObject);
             } while (cursor.moveToNext());
@@ -285,5 +286,18 @@ public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
         db.close(); // Closing database connection
 
         return consumptionObject;
+    }
+
+    public boolean CheckIsDataAlreadyInDBorNot(String TableName,
+                                                      String dbfield, String fieldValue) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        String Query = "Select * from " + TableName + " where " + dbfield + " = " + fieldValue;
+        Cursor cursor = db.rawQuery(Query, null);
+        if(cursor.getCount() <= 0){
+            cursor.close();
+            return false;
+        }
+        cursor.close();
+        return true;
     }
 }

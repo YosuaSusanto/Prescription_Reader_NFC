@@ -36,7 +36,7 @@ import com.example.reico_000.prescriptionreadernfc.VolleyController;
 
 
 public class LoginActivity extends Activity {
-    private static final String TAG = RegisterActivity.class.getSimpleName();
+    private static final String TAG = LoginActivity.class.getSimpleName();
     private Button btnLogin;
     private Button btnLinkToRegister;
     private EditText inputName;
@@ -162,7 +162,7 @@ public class LoginActivity extends Activity {
 
             @Override
             public void onErrorResponse(VolleyError error) {
-                Log.e(TAG, "Login Error: " + error.getMessage());
+                Log.e(TAG, "Login Error: " + error.getStackTrace());
                 Toast.makeText(getApplicationContext(),
                         error.getMessage(), Toast.LENGTH_LONG).show();
                 hideDialog();
@@ -182,7 +182,7 @@ public class LoginActivity extends Activity {
         };
 
         // Adding request to request queue
-        VolleyController.getInstance().addToRequestQueue(strReq);
+        VolleyController.getInstance(this).addToRequestQueue(strReq);
 //        Volley.newRequestQueue(this).add(strReq);
     }
 

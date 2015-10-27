@@ -8,6 +8,7 @@ import android.database.Cursor;
  */
 public class MedicationObject {
 
+    int _ID = -1;
     String _patientID ="";
     String _brandName = "";
     String _genericName = "";
@@ -25,7 +26,8 @@ public class MedicationObject {
         this._genericName = genericName;
     }
 
-    public MedicationObject(String brandName, String genericName, String dosageForm, String perDosage, String totalDosage, String consumptionTime, String patientID, String administration){
+    public MedicationObject(int id, String brandName, String genericName, String dosageForm, String perDosage, String totalDosage, String consumptionTime, String patientID, String administration){
+        this._ID = id;
         this._brandName = brandName;
         this._genericName = genericName;
         this._dosageForm = dosageForm;
@@ -34,6 +36,10 @@ public class MedicationObject {
         this._consumptionTime = consumptionTime;
         this._patientID = patientID;
         this._administration = administration;
+    }
+
+    public int get_id(){
+        return this._ID;
     }
 
     public String get_brandName(){
@@ -77,6 +83,7 @@ public class MedicationObject {
      */
     public ContentValues getContentValues() {
         ContentValues values = new ContentValues();
+        values.put(MedicationDatabaseSQLiteHandler.KEY_ID, _ID);
         values.put(MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME, _brandName);
         values.put(MedicationDatabaseSQLiteHandler.KEY_GENERIC_NAME, _genericName);
         values.put(MedicationDatabaseSQLiteHandler.KEY_DOSAGE_FORM, _dosageForm);
@@ -90,6 +97,7 @@ public class MedicationObject {
 
     // Create a MedicationObject object from a cursor
     public static MedicationObject fromCursor(Cursor curMedication) {
+        int id = curMedication.getInt(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_ID));
         String brandName = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME));
         String genericName = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_GENERIC_NAME));
         String dosageForm = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_DOSAGE_FORM));
@@ -99,6 +107,6 @@ public class MedicationObject {
         String patientID = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID));
         String administration = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_ADMINISTRATION));
 
-        return new MedicationObject(brandName, genericName, dosageForm, perDosage, totalDosage, consumptionTime, patientID, administration);
+        return new MedicationObject(id, brandName, genericName, dosageForm, perDosage, totalDosage, consumptionTime, patientID, administration);
     }
 }
