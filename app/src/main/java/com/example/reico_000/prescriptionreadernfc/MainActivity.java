@@ -18,6 +18,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.database.ContentObserver;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
@@ -100,34 +101,100 @@ public class MainActivity extends FragmentActivity
     private AlarmManager manager;
 
     // Constants
+    // Content provider scheme
+    public static final String SCHEME = "content://";
     // The authority for the sync adapter's content provider
     public static final String AUTHORITY = MedicationContract.AUTHORITY;
+    // Path for the content provider table
+    public static final String TABLE_MEDICATION_PATH = "medicationTable";
     // An account type, in the form of a domain name
     public static final String ACCOUNT_TYPE = "prescriptionreadernfc.account";
     // The account name
     public static final String ACCOUNT = "dummyaccount";
     // Instance fields
     Account mAccount;
+    // A content URI for the content provider's data table
+    Uri mUri;
+    // A content resolver for accessing the provider
+    ContentResolver mResolver;
+
+    TableObserver tableObserver;
+
+    public class TableObserver extends ContentObserver {
+        private boolean selfChange;
+        public TableObserver() {
+            super(null);
+        }
+
+        /*
+         * Define a method that's called when data in the
+         * observed content provider changes.
+         * This method signature is provided for compatibility with
+         * older platforms.
+         */
+        @Override
+        public void onChange(boolean selfChange) {
+            /*
+             * Invoke the method signature available as of
+             * Android platform version 4.1, with a null URI.
+             */
+            onChange(selfChange, null);
+        }
+
+        /*
+         * Define a method that's called when data in the
+         * observed content provider changes.
+         */
+        @Override
+        public void onChange(boolean selfChange, Uri changeUri) {
+            /*
+             * Ask the framework to run your sync adapter.
+             * To maintain backward compatibility, assume that
+             * changeUri is null.*/
+            ContentResolver.requestSync(mAccount, AUTHORITY, null);
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_main);
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
         medicationDBHandler = MedicationDatabaseSQLiteHandler.getInstance(this);
         session  = new SessionManager(getApplicationContext());
 
+        // Get the content resolver object for your app
+//        mResolver = getContentResolver();
+        // Construct a URI that points to the content provider data table
+//        mUri = new Uri.Builder()
+//                .scheme(SCHEME)
+//                .authority(AUTHORITY)
+//                .path(TABLE_MEDICATION_PATH)
+//                .build();
+        /*
+         * Create a content observer object.
+         * Its code does not mutate the provider, so set
+         * selfChange to "false"
+         */
+//        tableObserver = new TableObserver();
+        /*
+         * Register the observer for the data table. The table's path
+         * and any of its subpaths trigger the observer.
+         */
+//        mResolver.registerContentObserver(mUri, true, tableObserver);
+
         // Create the dummy account
         mAccount = CreateSyncAccount(this);
 
         PatientID = session.getPatientID();
-        if (PatientID == "") {
-            // Launch main activity
-            Intent intent = new Intent(MainActivity.this,
-                    LoginActivity.class);
-            startActivity(intent);
-        }
+//        if (PatientID == "") {
+//            // Launch login activity
+//            Intent intent = new Intent(MainActivity.this,
+//                    LoginActivity.class);
+//            startActivity(intent);
+//        }
         mNavigationDrawerFragment = (NavigationDrawerFragment)
                 getFragmentManager().findFragmentById(R.id.navigation_drawer);
         mTitle = getTitle();
@@ -155,6 +222,12 @@ public class MainActivity extends FragmentActivity
         }
 
         handleIntent(getIntent());
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+//        getContentResolver().unregisterContentObserver (tableObserver);
     }
 
     /**
@@ -398,6 +471,8 @@ public class MainActivity extends FragmentActivity
         @Override
         protected void onPostExecute(String result) {
             if (result != null) {
+                populateLocalDB(PatientID);
+
                 FragmentManager manager = getFragmentManager();
 
                 mScanFragment = (Scan) manager.findFragmentByTag("scanFragment");
@@ -505,11 +580,11 @@ public class MainActivity extends FragmentActivity
         } else if (id == R.id.action_scanItem2) {
             scanItemTwo();
             return true;
-        } else if (id == R.id.action_getConsumption1) {
-            getConsumption(1);
+        } else if (id == R.id.action_scanItem3) {
+            scanItemThree();
             return true;
-        } else if (id == R.id.action_getConsumption2) {
-            getConsumption(2);
+        } else if (id == R.id.action_scanItem4) {
+            scanItemFour();
             return true;
         }
 
@@ -543,8 +618,7 @@ public class MainActivity extends FragmentActivity
         PerDosage = "5";
         TotalDosage = "105";
         ConsumptionTime = "M";
-        //Should the tag include patientID?? Why do we need a unique prescription for each patient?
-//        PatientID = "43462553";
+        PatientID = "43462553";
         Administration = "Should be taken on an empty stomach: Take at least 1 hr before or 1 hr after a meal. " +
                 "Do not eat/drink grapefruit products.";
         updateScanFragment();
@@ -557,10 +631,38 @@ public class MainActivity extends FragmentActivity
         PerDosage = "5";
         TotalDosage = "28";
         ConsumptionTime = "ME";
-        //Should the tag include patientID?? Why do we need a unique prescription for each patient?
-        //PatientID = "43462553";
+        PatientID = "43462553";
         Administration = "Should be taken with food: Take w/in ½ hr after meals.";
         updateScanFragment();
+    }
+
+    private void scanItemThree() {
+        BrandName = "Tykerb";
+        GenericName = "Laptinib";
+        DosageForm = "250 mg Pill";
+        PerDosage = "5";
+        TotalDosage = "105";
+        ConsumptionTime = "M";
+        PatientID = "43462552";
+        Administration = "Should be taken on an empty stomach: Take at least 1 hr before or 1 hr after a meal. " +
+                "Do not eat/drink grapefruit products.";
+        updateScanFragment();
+    }
+
+    private void scanItemFour() {
+//        BrandName = "Xalkori";
+//        GenericName = "Crizotinib";
+//        DosageForm = "250 mg Tablet";
+//        PerDosage = "1";
+//        TotalDosage = "15";
+//        ConsumptionTime = "AB";
+//        PatientID = "43462552";
+//        Administration = "May be taken with or without food: Take consistently either always w/ or always w/o meals. " +
+//                "Swallow whole, do not chew/crush. For patients w/ swallowing difficulties, disperse tab in " +
+//                "approx 30 mL of water by gently stirring immediately prior to drinking. Rinse the glass w/ the same " +
+//                "amount of water & drink the rinse completely. Avoid grapefruit juice.";
+//        updateScanFragment();
+        insertDefaultConsumptionData();
     }
 
     private void getConsumption(int i) {
@@ -588,6 +690,8 @@ public class MainActivity extends FragmentActivity
     }
 
     private void updateScanFragment() {
+        populateLocalDB(PatientID);
+
         FragmentManager manager = getFragmentManager();
 
 //        Can't be implemented, commit will only be executed when the main thread is ready
@@ -663,9 +767,10 @@ public class MainActivity extends FragmentActivity
         if ((!BrandName.equals("")) && (!DosageForm.equals(""))) {
             ContentResolver resolver = getContentResolver();
             Uri uri = MedicationContract.Medications.CONTENT_URI;
-            String[] projection = new String[]{medicationDBHandler.KEY_ID, medicationDBHandler.KEY_TOTAL_DOSAGE,
-                    medicationDBHandler.KEY_BRAND_NAME, medicationDBHandler.KEY_DOSAGE_FORM};
-            String selection = medicationDBHandler.KEY_BRAND_NAME + " = ? AND " + medicationDBHandler.KEY_DOSAGE_FORM + " = ?";
+            String[] projection = new String[]{MedicationDatabaseSQLiteHandler.KEY_ID, MedicationDatabaseSQLiteHandler.KEY_TOTAL_DOSAGE,
+                    MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME, MedicationDatabaseSQLiteHandler.KEY_DOSAGE_FORM};
+            String selection = MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME + " = ? AND " +
+                    MedicationDatabaseSQLiteHandler.KEY_DOSAGE_FORM + " = ?";
             String[] selectionArgs = new String[]{BrandName, DosageForm};
             Cursor cursor =
                     resolver.query(uri,
@@ -681,48 +786,64 @@ public class MainActivity extends FragmentActivity
                     saved_TotalDosage = cursor.getInt(cursor.getColumnIndex("TotalDosage"));//MedicationDatabaseSQLiteHandler.COL_TOTALDOSAGE);
                 }
                 cursor.close();
-                Log.e("Consume Func: ", "saved_ID = " + saved_Id);
-                Toast.makeText(this, "saved_ID = " + saved_Id, Toast.LENGTH_SHORT);
+                Log.d("Consume Func: ", "saved_ID = " + saved_Id);
                 int effectiveTotalDosage = saved_TotalDosage - Integer.parseInt(PerDosage);
                 if (saved_Id > -1) {
                     ContentValues values = new ContentValues();
-                    values.put(medicationDBHandler.KEY_MEDICATION_ID, saved_Id);
-                    values.put(medicationDBHandler.KEY_CONSUMED_AT, getCurrentTimeStamp());
-                    resolver.insert(MedicationContract.Consumption.CONTENT_URI, values);
+                    long noUpdated;
+                    projection = new String[]{MedicationDatabaseSQLiteHandler.KEY_ID, MedicationDatabaseSQLiteHandler.KEY_MEDICATION_ID,
+                            MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT, MedicationDatabaseSQLiteHandler.KEY_IS_TAKEN,
+                            MedicationDatabaseSQLiteHandler.KEY_REMAINING_DOSAGE};
+                    selection = MedicationDatabaseSQLiteHandler.KEY_MEDICATION_ID + " = ? AND " +
+                            MedicationDatabaseSQLiteHandler.KEY_IS_TAKEN + " = ?";
+                    selectionArgs = new String[]{String.valueOf(saved_Id), "false"};
+                    String sortOrder = MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT;
+                    Cursor cursor2 =
+                            resolver.query(MedicationContract.Consumption.CONTENT_URI,
+                                    projection,
+                                    selection,
+                                    selectionArgs,
+                                    sortOrder);
+                    if (cursor2 != null) {
+                        if (cursor2.moveToFirst()) {
+                            long consumption_Id = cursor2.getLong(cursor2.getColumnIndex("_id"));//MedicationDatabaseSQLiteHandler.COL_ROWID);
+                            String curTime = getCurrentTimeStamp();
+                            selection = MedicationDatabaseSQLiteHandler.KEY_ID + " = ?";
+                            selectionArgs = new String[]{String.valueOf(consumption_Id)};
+                            values.clear();
+                            values.put(MedicationDatabaseSQLiteHandler.KEY_MEDICATION_ID, saved_Id);
+                            values.put(MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT, curTime);
+                            values.put(MedicationDatabaseSQLiteHandler.KEY_IS_TAKEN, "true");
+                            values.put(MedicationDatabaseSQLiteHandler.KEY_REMAINING_DOSAGE, effectiveTotalDosage);
+                            noUpdated = resolver.update(MedicationContract.Consumption.CONTENT_URI, values, selection, selectionArgs);
+                            updateConsumptionsRemoteDB((int)saved_Id, curTime, "true", String.valueOf(effectiveTotalDosage));
+                        }
+                        cursor2.close();
+                    } else {
+                        new AlertDialog.Builder(this)
+                                .setTitle("Medication Already Taken")
+                                .setMessage("You have already taken your medication for today")
+                                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        // continue with delete
+                                    }
+                                })
+                                .setIcon(android.R.drawable.ic_dialog_alert)
+                                .show();
+                    }
 
-                    String where = medicationDBHandler.KEY_ID + " = " + saved_Id;
+                    selection = MedicationDatabaseSQLiteHandler.KEY_ID + " = " + saved_Id;
                     values.clear();
-                    values.put(medicationDBHandler.KEY_TOTAL_DOSAGE, effectiveTotalDosage);
+                    values.put(MedicationDatabaseSQLiteHandler.KEY_TOTAL_DOSAGE, effectiveTotalDosage);
                     uri = ContentUris.withAppendedId(MedicationContract.Medications.CONTENT_URI, saved_Id);
-//                    uri = ContentUris.withAppendedId(Uri.parse(MedicationContract.Medications.CONTENT_TYPE), saved_Id);
-                    long noUpdated = resolver.update(uri, values, where, null);
-//                    medicationDBHandler.updateRow(saved_Id, effectiveTotalDosage);
-
-                    // Update online database with updated effectiveTotalDosage
-//                    try{
-//                            connectionSQL = SQServerConnection.dbConnector();
-//                            String query = "INSERT INTO [NFCMedFeedback].[dbo].[NFCMedicationFeedback] (PatientID, PhoneConsumptionTime, " +
-//                                    "BrandName, GenericName, RemainingDosage)\n" + "VALUES ( '"+ PatientID+ "' , '"+ getCurrentTimeStamp() +
-//                                    "' , '" + BrandName + "' , '"+ GenericName + "' , " + effectiveTotalDosage +" );";
-//                        Log.d("Online Server", "Update String: "+ query);
-//                        PreparedStatement pst = connectionSQL.prepareStatement(query);
-//                            if (pst == null) {
-//                                Log.e("respondConsumeMed", "pst is null!");
-//                            } else {
-//                                Log.d("respondConsumeMed", "pst not null leh");
-//                                pst.execute();
-//                                pst.close();
-//                            }
-//                    } catch (Exception ex){
-//                        ex.printStackTrace();
-//                    }
-
+                    noUpdated = resolver.update(uri, values, selection, null);
+                    updateDosageRemoteDB((int) saved_Id, String.valueOf(effectiveTotalDosage));
                     // If effectiveTotal Dosage is <1, delete medicine
                     // else just notify user consumption successful
                     if (effectiveTotalDosage < 1) {
                         long noDeleted = resolver.delete
                                 (MedicationContract.Medications.CONTENT_URI,
-                                        medicationDBHandler.KEY_ID + " = ? ",
+                                        MedicationDatabaseSQLiteHandler.KEY_ID + " = ? ",
                                         new String[]{String.valueOf(saved_Id)});
                         new AlertDialog.Builder(this)
                                 .setTitle("Medication Course Completed")
@@ -747,9 +868,6 @@ public class MainActivity extends FragmentActivity
                                 .setIcon(android.R.drawable.ic_dialog_alert)
                                 .show();
                     }
-
-
-
                     Log.d("Consume Func:", "Row Updated");
                 } else {
                     new AlertDialog.Builder(this)
@@ -765,7 +883,6 @@ public class MainActivity extends FragmentActivity
                 }
 
             }
-            cursor.close();
         } else {
             new AlertDialog.Builder(this)
                     .setTitle("Error!")
@@ -787,9 +904,9 @@ public class MainActivity extends FragmentActivity
         if (!BrandName.equals("")) {
             ContentResolver resolver = getContentResolver();
             Uri uri = MedicationContract.Medications.CONTENT_URI;
-            String[] projection = new String[]{medicationDBHandler.KEY_ID, medicationDBHandler.KEY_TOTAL_DOSAGE,
-                    medicationDBHandler.KEY_BRAND_NAME, medicationDBHandler.KEY_DOSAGE_FORM};
-            String selection = medicationDBHandler.KEY_BRAND_NAME + " = ? AND " + medicationDBHandler.KEY_DOSAGE_FORM + " = ?";
+            String[] projection = new String[]{MedicationDatabaseSQLiteHandler.KEY_ID, MedicationDatabaseSQLiteHandler.KEY_TOTAL_DOSAGE,
+                    MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME, MedicationDatabaseSQLiteHandler.KEY_DOSAGE_FORM};
+            String selection = MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME + " = ? AND " + MedicationDatabaseSQLiteHandler.KEY_DOSAGE_FORM + " = ?";
             String[] selectionArgs = new String[]{BrandName, DosageForm};
             Cursor cursor =
                     resolver.query(uri,
@@ -809,8 +926,8 @@ public class MainActivity extends FragmentActivity
             if (saved_Id > -1) {
                 int effectiveTotalDosage = saved_TotalDosage + Integer.parseInt(TotalDosage);
                 values.clear();
-                String where = medicationDBHandler.KEY_ID + " = " + saved_Id;
-                values.put(medicationDBHandler.KEY_TOTAL_DOSAGE, effectiveTotalDosage);
+                String where = MedicationDatabaseSQLiteHandler.KEY_ID + " = " + saved_Id;
+                values.put(MedicationDatabaseSQLiteHandler.KEY_TOTAL_DOSAGE, effectiveTotalDosage);
                 uri = ContentUris.withAppendedId(MedicationContract.Medications.CONTENT_URI, saved_Id);
                 long noUpdated = resolver.update(uri, values, where, null);
                 new AlertDialog.Builder(this)
@@ -825,14 +942,14 @@ public class MainActivity extends FragmentActivity
                         .show();
             } else {
                 values.clear();
-                values.put(medicationDBHandler.KEY_BRAND_NAME, BrandName);
-                values.put(medicationDBHandler.KEY_GENERIC_NAME, GenericName);
-                values.put(medicationDBHandler.KEY_DOSAGE_FORM, DosageForm);
-                values.put(medicationDBHandler.KEY_PER_DOSAGE, PerDosage);
-                values.put(medicationDBHandler.KEY_TOTAL_DOSAGE, TotalDosage);
-                values.put(medicationDBHandler.KEY_CONSUMPTION_TIME, ConsumptionTime);
-                values.put(medicationDBHandler.KEY_PATIENT_ID, PatientID);
-                values.put(medicationDBHandler.KEY_ADMINISTRATION, Administration);
+                values.put(MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME, BrandName);
+                values.put(MedicationDatabaseSQLiteHandler.KEY_GENERIC_NAME, GenericName);
+                values.put(MedicationDatabaseSQLiteHandler.KEY_DOSAGE_FORM, DosageForm);
+                values.put(MedicationDatabaseSQLiteHandler.KEY_PER_DOSAGE, PerDosage);
+                values.put(MedicationDatabaseSQLiteHandler.KEY_TOTAL_DOSAGE, TotalDosage);
+                values.put(MedicationDatabaseSQLiteHandler.KEY_CONSUMPTION_TIME, ConsumptionTime);
+                values.put(MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID, PatientID);
+                values.put(MedicationDatabaseSQLiteHandler.KEY_ADMINISTRATION, Administration);
                 resolver.insert(MedicationContract.Medications.CONTENT_URI, values);
 
                 Log.d("Insert: ", "Saved Medication Successful!");
@@ -878,23 +995,19 @@ public class MainActivity extends FragmentActivity
      * */
     private void populateLocalDB(final String patientID) {
         // Tag used to cancel the request
-//        String tag_string_req = "req_login";
         medicationDBHandler = MedicationDatabaseSQLiteHandler.getInstance(this);
         final ProgressDialog pDialog = new ProgressDialog(this);
         pDialog.setMessage("Fetching data from server...");
         pDialog.setCancelable(false);
         pDialog.show();
 
-//        pDialog.setMessage("Logging in ...");
-//        showDialog();
         medicationDBHandler = MedicationDatabaseSQLiteHandler.getInstance(this);
 
-//        JsonArrayRequest req = new JsonArrayRequest()
         StringRequest req = new StringRequest(Request.Method.POST, AppConfig.URL_POPULATE_DB,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        Log.d(TAG, response);
+                        Log.d("populateLocalDB Method", response);
 
                         try {
                             ContentResolver resolver = getContentResolver();
@@ -902,7 +1015,6 @@ public class MainActivity extends FragmentActivity
 
                             // Parsing json array response
                             // loop through each json object
-//                            jsonResponse = "";
                             JSONArray jArr = new JSONArray(response);
                             for (int i = 0; i < jArr.length(); i++) {
 
@@ -928,8 +1040,6 @@ public class MainActivity extends FragmentActivity
                                 }
                                 values.clear();
                             }
-//                            txtResponse.setText(jsonResponse);
-
                         } catch (JSONException e) {
                             e.printStackTrace();
                             Toast.makeText(getApplicationContext(),
@@ -937,8 +1047,6 @@ public class MainActivity extends FragmentActivity
                                     Toast.LENGTH_LONG).show();
                         }
                         pDialog.hide();
-
-//                        hidepDialog();
                     }
                 }, new Response.ErrorListener() {
             @Override
@@ -947,7 +1055,6 @@ public class MainActivity extends FragmentActivity
                 Toast.makeText(getApplicationContext(),
                         error.getMessage(), Toast.LENGTH_SHORT).show();
                 pDialog.hide();
-//                hidepDialog();
             }
         }) {
 
@@ -963,18 +1070,270 @@ public class MainActivity extends FragmentActivity
 
         // Adding request to request queue
         VolleyController.getInstance(this).addToRequestQueue(req);
-//        Volley.newRequestQueue(this).add(strReq);
+    }
+
+    /**
+     * Update dosage on remote medication DB
+     * */
+    private void updateDosageRemoteDB(final int med_id, final String effective_dosage) {
+        // Tag used to cancel the request
+        medicationDBHandler = MedicationDatabaseSQLiteHandler.getInstance(this);
+        final ProgressDialog pDialog = new ProgressDialog(this);
+        pDialog.setMessage("Fetching data from server...");
+        pDialog.setCancelable(false);
+//        pDialog.show();
+
+        StringRequest req = new StringRequest(Request.Method.POST, AppConfig.URL_UPDATE_DOSAGE,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        Log.d("updateDosageRemoteDB", response);
+
+                        try {
+                            JSONObject jObj = new JSONObject(response);
+                            boolean error = jObj.getBoolean("error");
+
+                            // Check for error node in json
+                            if (!error) {
+                                String operation = jObj.getString("operation");
+                                String row_nums = jObj.getString("row_nums");
+                                String dispMessage = operation;
+                                if (operation.equals("update")) {
+                                    dispMessage = "Updated " + row_nums + "row(s)";
+                                } else if (operation.equals("delete")) {
+                                    dispMessage = "Deleted " + row_nums + "row(s)";
+                                }
+                                Toast.makeText(getApplicationContext(),
+                                        dispMessage, Toast.LENGTH_LONG).show();
+                            } else {
+                                // Error in login. Get the error message
+                                String errorMsg = jObj.getString("error_msg");
+                                Toast.makeText(getApplicationContext(),
+                                        errorMsg, Toast.LENGTH_LONG).show();
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                            Toast.makeText(getApplicationContext(),
+                                    "Error: " + e.getMessage(),
+                                    Toast.LENGTH_LONG).show();
+                        }
+//                        pDialog.hide();
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+//                VolleyLog.d(TAG, "Error: " + error.getMessage());
+                Toast.makeText(getApplicationContext(),
+                        error.getMessage(), Toast.LENGTH_SHORT).show();
+//                pDialog.hide();
+            }
+        }) {
+
+            @Override
+            protected Map<String, String> getParams() {
+                // Posting parameters to login url
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("med_id", String.valueOf(med_id));
+                params.put("effective_dosage", effective_dosage);
+
+                return params;
+            }
+        };
+
+        // Adding request to request queue
+        VolleyController.getInstance(this).addToRequestQueue(req);
+    }
+
+    /**
+     * Insert stub consumptions remote DB
+     * */
+    private void insertDefaultConsumptionRemoteDB(final int med_id, final String consumption_time, final String remaining_dosage) {
+        // Tag used to cancel the request
+        medicationDBHandler = MedicationDatabaseSQLiteHandler.getInstance(this);
+
+        StringRequest req = new StringRequest(Request.Method.POST, AppConfig.URL_INSERT_CONSUMPTION,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        Log.d("insertConsumptionRemote", response);
+
+                        try {
+                            JSONObject jObj = new JSONObject(response);
+                            boolean error = jObj.getBoolean("error");
+
+                            // Check for error node in json
+                            if (!error) {
+//                                String uid = jObj.getString("uid");
+//
+//                                JSONObject details = jObj.getJSONObject("details");
+//                                String med_id = details.getString("med_id");
+//                                String consumption_time = details.getString("consumption_time");
+//                                String is_taken = details.getString("is_taken");
+//                                String remaining_dosage = details.getString("remaining_dosage");
+                                Toast.makeText(getApplicationContext(),
+                                        response, Toast.LENGTH_LONG).show();
+                            } else {
+                                // Error in login. Get the error message
+                                String errorMsg = jObj.getString("error_msg");
+                                Toast.makeText(getApplicationContext(),
+                                        errorMsg, Toast.LENGTH_LONG).show();
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                            Toast.makeText(getApplicationContext(),
+                                    "Error: " + e.getMessage(),
+                                    Toast.LENGTH_LONG).show();
+                        }
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+//                VolleyLog.d(TAG, "Error: " + error.getMessage());
+                Toast.makeText(getApplicationContext(),
+                        error.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        }) {
+
+            @Override
+            protected Map<String, String> getParams() {
+                // Posting parameters to login url
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("med_id", String.valueOf(med_id));
+                params.put("consumption_time", consumption_time);
+                params.put("is_taken", "unknown");
+                params.put("remaining_dosage", remaining_dosage);
+
+                return params;
+            }
+        };
+
+        // Adding request to request queue
+        VolleyController.getInstance(this).addToRequestQueue(req);
+    }
+
+    /**
+     * Update dosage on remote medication DB
+     * */
+    private void updateConsumptionsRemoteDB(final int med_id, final String consumption_time,
+                                            final String is_taken, final String remaining_dosage) {
+        medicationDBHandler = MedicationDatabaseSQLiteHandler.getInstance(this);
+
+        StringRequest req = new StringRequest(Request.Method.POST, AppConfig.URL_UPDATE_CONSUMPTION,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        Log.d("updateConsRemoteDB", response);
+
+                        try {
+                            JSONObject jObj = new JSONObject(response);
+                            boolean error = jObj.getBoolean("error");
+
+                            // Check for error node in json
+                            if (!error) {
+                                String row_nums = jObj.getString("row_nums");
+                                String dispMessage = "Updated " + row_nums + "row(s)";
+                                Toast.makeText(getApplicationContext(),
+                                        dispMessage, Toast.LENGTH_LONG).show();
+                            } else {
+                                // Error in updating. Get the error message
+                                String errorMsg = jObj.getString("error_msg");
+                                Toast.makeText(getApplicationContext(),
+                                        errorMsg, Toast.LENGTH_LONG).show();
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                            Toast.makeText(getApplicationContext(),
+                                    "Error: " + e.getMessage(),
+                                    Toast.LENGTH_LONG).show();
+                        }
+//                        pDialog.hide();
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+//                VolleyLog.d(TAG, "Error: " + error.getMessage());
+                Toast.makeText(getApplicationContext(),
+                        error.getMessage(), Toast.LENGTH_SHORT).show();
+//                pDialog.hide();
+            }
+        }) {
+
+            @Override
+            protected Map<String, String> getParams() {
+                // Posting parameters to login url
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("med_id", String.valueOf(med_id));
+                params.put("consumption_time", consumption_time);
+                params.put("is_taken", is_taken);
+                params.put("remaining_dosage", remaining_dosage);
+
+                return params;
+            }
+        };
+
+        // Adding request to request queue
+        VolleyController.getInstance(this).addToRequestQueue(req);
+    }
+
+    private void insertDefaultConsumptionData() {
+        Log.d("Test", "insertDefaultConsumptionData entered");
+        ContentResolver resolver = getContentResolver();
+        String[] projection = MedicationDatabaseSQLiteHandler.ALL_MED_KEYS;
+        String selection = MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID + " = ?";
+        String[] selectionArgs = new String[]{PatientID};
+
+        Cursor cursor =
+                resolver.query(MedicationContract.Medications.CONTENT_URI,
+                        projection,
+                        selection,
+                        selectionArgs,
+                        null);
+        Log.d("Test", "insertDefaultConsumptionData entered(after cursor)");
+        while (cursor.moveToNext()) {
+            int med_id = cursor.getInt(cursor.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_ID));
+            String consumptionTime = cursor.getString(cursor.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_CONSUMPTION_TIME));
+            String remaining_dosage = cursor.getString(cursor.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_TOTAL_DOSAGE));
+
+            for (int i = 0; i < consumptionTime.length(); i++) {
+                char c = consumptionTime.charAt(i);
+                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US);
+                String currentTimeStamp = dateFormat.format(new Date()); // Find todays date
+                switch (c) {
+                    case 'M':
+                        currentTimeStamp += " 07:00:00";
+                        break;
+                    case 'A':
+                        currentTimeStamp += " 12:00:00";
+                        break;
+                    case 'E':
+                        currentTimeStamp += " 17:00:00";
+                        break;
+                    case 'B':
+                        currentTimeStamp += " 22:00:00";
+                        break;
+                }
+                ContentValues values = new ContentValues();
+                values.put(MedicationDatabaseSQLiteHandler.KEY_MEDICATION_ID, med_id);
+                values.put(MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT, currentTimeStamp);
+                values.put(MedicationDatabaseSQLiteHandler.KEY_IS_TAKEN, "false");
+                values.put(MedicationDatabaseSQLiteHandler.KEY_REMAINING_DOSAGE, remaining_dosage);
+                resolver.insert(MedicationContract.Consumption.CONTENT_URI, values);
+                insertDefaultConsumptionRemoteDB(med_id, currentTimeStamp, remaining_dosage);
+            }
+        }
     }
 
     private void populateListViewfromdb() {
         Log.d("Test", "populateListViewfromdb entered");
         ContentResolver resolver = getContentResolver();
-        String[] projection = medicationDBHandler.ALL_MED_KEYS;
+        String[] projection = MedicationDatabaseSQLiteHandler.ALL_MED_KEYS;
+        String selection = MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID + " = ?";
+        String[] selectionArgs = new String[]{PatientID};
         Cursor cursor =
                 resolver.query(MedicationContract.Medications.CONTENT_URI,
                         projection,
-                        null,
-                        null,
+                        selection,
+                        selectionArgs,
                         null);
         Log.d("Test", "populateListViewfromdb entered(after cursor)");
         if (cursor == null) {
@@ -1019,8 +1378,8 @@ public class MainActivity extends FragmentActivity
     public void displayToastForId(long idInDB) {
         Log.d("displayToastForId", "Entered");
         ContentResolver resolver = getContentResolver();
-        String[] projection = medicationDBHandler.ALL_MED_KEYS;
-        String selection = medicationDBHandler.KEY_ID + " = ?";
+        String[] projection = MedicationDatabaseSQLiteHandler.ALL_MED_KEYS;
+        String selection = MedicationDatabaseSQLiteHandler.KEY_ID + " = ?";
         String[] selectionArgs = new String[]{String.valueOf(idInDB)};
         Cursor cursor =
                 resolver.query(MedicationContract.Medications.CONTENT_URI,
@@ -1046,17 +1405,17 @@ public class MainActivity extends FragmentActivity
 
                 //Toast.makeText(MainActivity.this, message, Toast.LENGTH_LONG).show();
             }
+            cursor.close();
         } else {
             Log.e("displayToastForId", "Cursor is nullllll");
         }
-        cursor.close();
     }
 
     public void deleteId(long idInDB) {
         Log.d("displayToastForId", "Entered");
         ContentResolver resolver = getContentResolver();
-        String[] projection = medicationDBHandler.ALL_MED_KEYS;
-        String selection = medicationDBHandler.KEY_ID + " = ?";
+        String[] projection = MedicationDatabaseSQLiteHandler.ALL_MED_KEYS;
+        String selection = MedicationDatabaseSQLiteHandler.KEY_ID + " = ?";
         String[] selectionArgs = new String[]{String.valueOf(idInDB)};
         Cursor cursor =
                 resolver.query(MedicationContract.Medications.CONTENT_URI,
@@ -1078,7 +1437,7 @@ public class MainActivity extends FragmentActivity
                                 ContentResolver resolver1 = getContentResolver();
                                 long noDeleted = resolver1.delete
                                         (MedicationContract.Medications.CONTENT_URI,
-                                                medicationDBHandler.KEY_ID + " = ? ",
+                                                MedicationDatabaseSQLiteHandler.KEY_ID + " = ? ",
                                                 new String[]{String.valueOf(idDB)});
                                 Toast.makeText(MainActivity.this, info_BrandName + " has been deleted.", Toast.LENGTH_LONG).show();
                             }
@@ -1096,7 +1455,6 @@ public class MainActivity extends FragmentActivity
         } else {
             Log.e("displayToastForId", "Cursor is nullllll");
         }
-        cursor.close();
     }
 
     public static String getCurrentTimeStamp(){
