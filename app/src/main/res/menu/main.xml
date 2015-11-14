@@ -23,13 +23,13 @@
         android:orderInCategory="100"
         android:showAsAction="never" />
     <item
-        android:id="@+id/action_getConsumption1"
-        android:title="@string/action_getConsumption1"
+        android:id="@+id/action_scanItem3"
+        android:title="@string/action_scanItem3"
         android:orderInCategory="100"
         android:showAsAction="never" />
     <item
-        android:id="@+id/action_getConsumption2"
-        android:title="@string/action_getConsumption2"
+        android:id="@+id/action_scanItem4"
+        android:title="@string/action_loadStubConsumption"
         android:orderInCategory="100"
         android:showAsAction="never" />
 </menu>

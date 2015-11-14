@@ -15,7 +15,7 @@ import android.widget.Toast;
 import java.util.Calendar;
 
 public class StarterService extends Service {
-    private static final String TAG = "MyService";
+    private static final String TAG = "StarterService";
 
     /**
      * The started service starts the AlarmManager.
@@ -26,13 +26,19 @@ public class StarterService extends Service {
     }
 
     @Override
+    public int onStartCommand(Intent intent, int flags, int startid) {
+        scheduleAlarm();
+        return START_STICKY;
+    }
+
+    @Override
     public IBinder onBind(Intent intent) {
         return null;
     }
 
     @Override
     public void onDestroy() {
-        Toast.makeText(this, "My Service stopped", Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "StarterService stopped", Toast.LENGTH_LONG).show();
         Log.d(TAG, "onDestroy");
     }
 
@@ -40,31 +46,31 @@ public class StarterService extends Service {
         Intent i = new Intent(this, NotificationBarAlarm.class);
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         Calendar calendar = Calendar.getInstance();
-        calendar.set(calendar.HOUR_OF_DAY, 7);
-        calendar.set(calendar.MINUTE, 0);
-        calendar.set(calendar.SECOND, 0);
-        calendar.set(calendar.MILLISECOND, 0);
+        calendar.set(Calendar.HOUR_OF_DAY, 7);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
         long sdl = calendar.getTimeInMillis();
 
         Calendar calendar2 = Calendar.getInstance();
-        calendar2.set(calendar.HOUR_OF_DAY, 12);
-        calendar2.set(calendar.MINUTE, 0);
-        calendar2.set(calendar.SECOND, 0);
-        calendar2.set(calendar.MILLISECOND, 0);
+        calendar2.set(Calendar.HOUR_OF_DAY, 12);
+        calendar2.set(Calendar.MINUTE, 0);
+        calendar2.set(Calendar.SECOND, 0);
+        calendar2.set(Calendar.MILLISECOND, 0);
         long sdl2 = calendar2.getTimeInMillis();
 
         Calendar calendar3 = Calendar.getInstance();
-        calendar3.set(calendar.HOUR_OF_DAY, 17);
-        calendar3.set(calendar.MINUTE, 0);
-        calendar3.set(calendar.SECOND, 0);
-        calendar3.set(calendar.MILLISECOND, 0);
+        calendar3.set(Calendar.HOUR_OF_DAY, 17);
+        calendar3.set(Calendar.MINUTE, 0);
+        calendar3.set(Calendar.SECOND, 0);
+        calendar3.set(Calendar.MILLISECOND, 0);
         long sdl3 = calendar3.getTimeInMillis();
 
         Calendar calendar4 = Calendar.getInstance();
-        calendar4.set(calendar.HOUR_OF_DAY, 22);
-        calendar4.set(calendar.MINUTE, 0);
-        calendar4.set(calendar.SECOND, 0);
-        calendar4.set(calendar.MILLISECOND, 0);
+        calendar4.set(Calendar.HOUR_OF_DAY, 22);
+        calendar4.set(Calendar.MINUTE, 0);
+        calendar4.set(Calendar.SECOND, 0);
+        calendar4.set(Calendar.MILLISECOND, 0);
         long sdl4 = calendar3.getTimeInMillis();
 //
 ////        Intent intent = new Intent(AlarmList.this, AlarmReceiver.class);
@@ -82,12 +88,12 @@ public class StarterService extends Service {
         PendingIntent pi4 = PendingIntent.getBroadcast(this, 3, i, PendingIntent.FLAG_UPDATE_CURRENT);
 
         if (Build.VERSION.SDK_INT >= 19) {
-            ALARM1.setExact(AlarmManager.RTC_WAKEUP, sdl,pi);
+            ALARM1.setExact(AlarmManager.RTC_WAKEUP, sdl, pi);
             ALARM2.setExact(AlarmManager.RTC_WAKEUP, sdl2, pi2);
             ALARM3.setExact(AlarmManager.RTC_WAKEUP, sdl3, pi3);
             ALARM4.setExact(AlarmManager.RTC_WAKEUP, sdl4,  pi4);
         } else {
-            ALARM1.set(AlarmManager.RTC_WAKEUP, sdl,pi);
+            ALARM1.set(AlarmManager.RTC_WAKEUP, sdl, pi);
             ALARM2.set(AlarmManager.RTC_WAKEUP, sdl2, pi2);
             ALARM3.set(AlarmManager.RTC_WAKEUP, sdl3, pi3);
             ALARM4.set(AlarmManager.RTC_WAKEUP, sdl4, pi4);
