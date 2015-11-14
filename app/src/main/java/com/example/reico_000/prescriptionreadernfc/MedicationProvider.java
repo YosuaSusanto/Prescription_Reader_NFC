@@ -95,22 +95,22 @@ public class MedicationProvider extends ContentProvider {
         boolean useAuthorityUri = false;
         switch (URI_MATCHER.match(uri)) {
             case MED_LIST:
-                builder.setTables(dbHandler.TABLE_MEDICATIONS);
+                builder.setTables(MedicationDatabaseSQLiteHandler.TABLE_MEDICATIONS);
                 if (TextUtils.isEmpty(sortOrder)) {
                     sortOrder = MedicationContract.Medications.SORT_ORDER_DEFAULT;
                 }
                 break;
             case MED_ID:
-                builder.setTables(dbHandler.TABLE_MEDICATIONS);
+                builder.setTables(MedicationDatabaseSQLiteHandler.TABLE_MEDICATIONS);
                 // limit query to one row at most:      //WHY LIKE THIS??
 //                builder.appendWhere(MedicationContract.Medications._ID + " = " +
 //                        uri.getLastPathSegment());
                 break;
             case CONSUMPTION_LIST:
-                builder.setTables(dbHandler.TABLE_CONSUMPTIONS);
+                builder.setTables(MedicationDatabaseSQLiteHandler.TABLE_CONSUMPTIONS);
                 break;
             case CONSUMPTION_ID:
-                builder.setTables(dbHandler.TABLE_CONSUMPTIONS);
+                builder.setTables(MedicationDatabaseSQLiteHandler.TABLE_CONSUMPTIONS);
                 // limit query to one row at most:      //WHY LIKE THIS??
 //                builder.appendWhere(MedicationContract.Consumption._ID + " = " +
 //                        uri.getLastPathSegment());
@@ -155,14 +155,14 @@ public class MedicationProvider extends ContentProvider {
         if (URI_MATCHER.match(uri) == MED_LIST) {
             long id =
                     db.insert(
-                            dbHandler.TABLE_MEDICATIONS,
+                            MedicationDatabaseSQLiteHandler.TABLE_MEDICATIONS,
                             null,
                             values);
             return getUriForId(id, uri);
         } else {
             long id =
                     db.insert(
-                            dbHandler.TABLE_CONSUMPTIONS,
+                            MedicationDatabaseSQLiteHandler.TABLE_CONSUMPTIONS,
                             null,
                             values);
             return getUriForId(id, uri);
@@ -194,7 +194,7 @@ public class MedicationProvider extends ContentProvider {
         switch (URI_MATCHER.match(uri)) {
             case MED_LIST:
                 delCount = db.delete(
-                        dbHandler.TABLE_MEDICATIONS,
+                        MedicationDatabaseSQLiteHandler.TABLE_MEDICATIONS,
                         selection,
                         selectionArgs);
                 break;
@@ -205,13 +205,13 @@ public class MedicationProvider extends ContentProvider {
                     where += " AND " + selection;
                 }
                 delCount = db.delete(
-                        dbHandler.TABLE_MEDICATIONS,
+                        MedicationDatabaseSQLiteHandler.TABLE_MEDICATIONS,
                         where,
                         selectionArgs);
                 break;
             case CONSUMPTION_LIST:
                 delCount = db.delete(
-                        dbHandler.TABLE_CONSUMPTIONS,
+                        MedicationDatabaseSQLiteHandler.TABLE_CONSUMPTIONS,
                         selection,
                         selectionArgs);
                 break;
@@ -222,7 +222,7 @@ public class MedicationProvider extends ContentProvider {
                     where += " AND " + selection;
                 }
                 delCount = db.delete(
-                        dbHandler.TABLE_CONSUMPTIONS,
+                        MedicationDatabaseSQLiteHandler.TABLE_CONSUMPTIONS,
                         where,
                         selectionArgs);
                 break;
@@ -252,7 +252,7 @@ public class MedicationProvider extends ContentProvider {
         switch (URI_MATCHER.match(uri)) {
             case MED_LIST:
                 updateCount = db.update(
-                        dbHandler.TABLE_MEDICATIONS,
+                        MedicationDatabaseSQLiteHandler.TABLE_MEDICATIONS,
                         values,
                         selection,
                         selectionArgs);
@@ -264,14 +264,14 @@ public class MedicationProvider extends ContentProvider {
                     where += " AND " + selection;
                 }
                 updateCount = db.update(
-                        dbHandler.TABLE_MEDICATIONS,
+                        MedicationDatabaseSQLiteHandler.TABLE_MEDICATIONS,
                         values,
                         where,
                         selectionArgs);
                 break;
             case CONSUMPTION_LIST:
                 updateCount = db.update(
-                        dbHandler.TABLE_CONSUMPTIONS,
+                        MedicationDatabaseSQLiteHandler.TABLE_CONSUMPTIONS,
                         values,
                         selection,
                         selectionArgs);
@@ -283,7 +283,7 @@ public class MedicationProvider extends ContentProvider {
                     where += " AND " + selection;
                 }
                 updateCount = db.update(
-                        dbHandler.TABLE_CONSUMPTIONS,
+                        MedicationDatabaseSQLiteHandler.TABLE_CONSUMPTIONS,
                         values,
                         where,
                         selectionArgs);

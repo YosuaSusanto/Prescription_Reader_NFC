@@ -66,6 +66,8 @@ public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
     // Consumptions table column names
     public static final String KEY_MEDICATION_ID = "MedicationID";
     public static final String KEY_CONSUMED_AT = "ConsumedAt";
+    public static final String KEY_IS_TAKEN = "IsTaken";
+    public static final String KEY_REMAINING_DOSAGE = "RemainingDosage";
 
     // TODO: Setup your field numbers here (0 = KEY_ROWID, 1=...)
     public static final int COL_BRANDNAME = 1;
@@ -80,11 +82,11 @@ public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
 	@Override
 	public void onCreate(SQLiteDatabase db) {
         String CREATE_MEDICATION_TABLE = "CREATE TABLE " + TABLE_MEDICATIONS + "(" + KEY_ID + " INTEGER PRIMARY KEY, " +
-                KEY_BRAND_NAME + " TEXT," + KEY_GENERIC_NAME + " TEXT," + KEY_DOSAGE_FORM + " TEXT," + KEY_PER_DOSAGE + " TEXT, " +
+                KEY_BRAND_NAME + " TEXT, " + KEY_GENERIC_NAME + " TEXT, " + KEY_DOSAGE_FORM + " TEXT, " + KEY_PER_DOSAGE + " TEXT, " +
                 KEY_TOTAL_DOSAGE + " TEXT, " + KEY_CONSUMPTION_TIME + " TEXT, " + KEY_PATIENT_ID + " TEXT, " +
                 KEY_ADMINISTRATION + " TEXT )";
         String CREATE_CONSUMPTION_TABLE = "CREATE TABLE " + TABLE_CONSUMPTIONS + "(" + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                KEY_MEDICATION_ID + " INTEGER," + KEY_CONSUMED_AT + " TEXT )";
+                KEY_MEDICATION_ID + " INTEGER," + KEY_CONSUMED_AT + " TEXT, " + KEY_IS_TAKEN + " TEXT, " + KEY_REMAINING_DOSAGE +" TEXT )";
 
         db.execSQL(CREATE_MEDICATION_TABLE);
         db.execSQL(CREATE_CONSUMPTION_TABLE);
@@ -237,7 +239,7 @@ public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
         db.close();
     }
 
-    public void addConsumptionDetails(String patientId, String brandName, String genericName, String consumedAt) {
+    public void addConsumptionDetails(String patientId, String brandName, String genericName, String consumedAt, String remainingDosage) {
         SQLiteDatabase db = this.getWritableDatabase();
                 String selectQuery = "SELECT  * FROM " + TABLE_MEDICATIONS + " WHERE " + KEY_BRAND_NAME + " = '" + brandName + "' AND " +
                         KEY_GENERIC_NAME + " = '" + genericName + "' AND " + KEY_PATIENT_ID + " = '" + patientId + "'";
@@ -250,11 +252,13 @@ public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
                 ContentValues values = new ContentValues();
                 values.put(KEY_MEDICATION_ID, med_id);
                 values.put(KEY_CONSUMED_AT, consumedAt);
+                values.put(KEY_REMAINING_DOSAGE, remainingDosage);
 
                 // Inserting Row
                 db.insert(TABLE_CONSUMPTIONS, null, values);
                 db.close(); // Closing database connection
             }
+            c.close();
         }
     }
 
@@ -276,13 +280,15 @@ public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
                 if (c2 != null) {
                     if (c2.moveToFirst()) {
                         String consumedAt = c2.getString(c2.getColumnIndex("ConsumedAt"));
-                        consumptionObject = new ConsumptionDetailsObject(med_id, consumedAt);
+                        String isTaken = c2.getString(c2.getColumnIndex("IsTaken"));
+                        String remainingDosage = c2.getString(c2.getColumnIndex("RemainingDosage"));
+                        consumptionObject = new ConsumptionDetailsObject(med_id, consumedAt, isTaken, remainingDosage);
                     }
+                    c2.close();
                 }
-                c2.close();
             }
+            c.close();
         }
-        c.close();
         db.close(); // Closing database connection
 
         return consumptionObject;
