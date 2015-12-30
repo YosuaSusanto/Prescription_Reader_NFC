@@ -1,12 +1,28 @@
 package com.example.reico_000.prescriptionreadernfc;
 
 import android.accounts.Account;
+import android.app.ProgressDialog;
 import android.content.AbstractThreadedSyncAdapter;
 import android.content.ContentProviderClient;
 import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.SyncResult;
 import android.os.Bundle;
+import android.util.Log;
+import android.widget.Toast;
+
+import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by Yosua Susanto on 26/10/2015.
@@ -17,6 +33,10 @@ import android.os.Bundle;
 public class SyncAdapter extends AbstractThreadedSyncAdapter {
     // Define a variable to contain a content resolver instance
     ContentResolver mContentResolver;
+    Context mContext;
+    MedicationDatabaseSQLiteHandler medicationDBHandler;
+
+//    android.os.Debug.waitForDebugger();
     /**
      * Set up the sync adapter
      */
@@ -27,6 +47,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
          * from the incoming Context
          */
         mContentResolver = context.getContentResolver();
+        mContext = context;
     }
     /**
      * Set up the sync adapter. This form of the
@@ -43,6 +64,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
          * from the incoming Context
          */
         mContentResolver = context.getContentResolver();
+        mContext = context;
     }
 
     /*
@@ -60,5 +82,304 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
     /*
      * Put the data transfer code here.
      */
+        String functions = extras.getString("functions");
+
+        if (functions.equals("insertConsumption")) {
+            int med_id = extras.getInt("med_id");
+            String consumption_time = extras.getString("consumption_time");
+            String is_taken = extras.getString("is_taken");
+            String remaining_dosage = extras.getString("remaining_dosage");
+            insertDefaultConsumptionRemoteDB(med_id, consumption_time, is_taken, remaining_dosage);
+        } else if (functions.equals("updateConsumption")) {
+            int med_id = extras.getInt("med_id");
+            String consumption_time = extras.getString("consumption_time");
+            String is_taken = extras.getString("is_taken");
+            String remaining_dosage = extras.getString("remaining_dosage");
+            updateConsumptionsRemoteDB(med_id, consumption_time, is_taken, remaining_dosage);
+        } else if (functions.equals("populateLocalDB")) {
+            String patient_id = extras.getString("patient_id");
+            populateLocalDB(patient_id);
+        } else if (functions.equals("updateDosage")) {
+            int med_id = extras.getInt("med_id");
+            String effective_dosage = extras.getString("effective_dosage");
+            updateDosageRemoteDB(med_id, effective_dosage);
+        }
+
+    }
+
+    /**
+     * Populate local db with medication data from server
+     * */
+    private void populateLocalDB(final String patientID) {
+        medicationDBHandler = MedicationDatabaseSQLiteHandler.getInstance(mContext);
+//        final ProgressDialog pDialog = new ProgressDialog(mContext);
+//        pDialog.setMessage("Fetching data from server...");
+//        pDialog.setCancelable(false);
+//        pDialog.show();
+
+        StringRequest req = new StringRequest(Request.Method.POST, AppConfig.URL_POPULATE_DB,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        Log.d("populateLocalDB Method", response);
+
+                        try {
+                            ContentResolver resolver = mContext.getContentResolver();
+                            ContentValues values = new ContentValues();
+
+                            // Parsing json array response
+                            // loop through each json object
+                            JSONArray jArr = new JSONArray(response);
+                            for (int i = 0; i < jArr.length(); i++) {
+
+                                JSONObject medication = (JSONObject) jArr.get(i);
+
+                                int id = medication.getInt("id");
+                                String brand_name = medication.getString("brand_name");
+                                String generic_name = medication.getString("generic_name");
+                                String dosage_form = medication.getString("dosage_form");
+                                String per_dosage = medication.getString("per_dosage");
+                                String total_dosage = medication.getString("total_dosage");
+                                String consumption_time = medication.getString("consumption_time");
+                                String patient_id = medication.getString("patient_id");
+                                String administration = medication.getString("administration");
+
+                                consumption_time = consumption_time.replace("Morning", "M");
+                                consumption_time = consumption_time.replace("Afternoon", "A");
+                                consumption_time = consumption_time.replace("Evening", "E");
+                                consumption_time = consumption_time.replace("Before sleep", "B");
+                                consumption_time = consumption_time.replace(", ", "");
+
+                                MedicationObject medObj = new MedicationObject(id, brand_name, generic_name, dosage_form,
+                                        per_dosage, total_dosage, consumption_time, patient_id, administration);
+
+                                values = medObj.getContentValues();
+                                if (!medicationDBHandler.CheckIsDataAlreadyInDBorNot(MedicationDatabaseSQLiteHandler.TABLE_MEDICATIONS,
+                                        MedicationDatabaseSQLiteHandler.KEY_ID, String.valueOf(id))) {
+                                    resolver.insert(MedicationContract.Medications.CONTENT_URI, values);
+                                    Toast.makeText(mContext,
+                                            brand_name + " inserted",
+                                            Toast.LENGTH_LONG).show();
+                                }
+                                values.clear();
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                            Toast.makeText(mContext,
+                                    "Error: " + e.getMessage(),
+                                    Toast.LENGTH_LONG).show();
+                        }
+//                        pDialog.hide();
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+//                VolleyLog.d(TAG, "Error: " + error.getMessage());
+                Toast.makeText(mContext,
+                        error.getMessage(), Toast.LENGTH_SHORT).show();
+//                pDialog.hide();
+            }
+        }) {
+
+            @Override
+            protected Map<String, String> getParams() {
+                // Posting parameters to login url
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("patient_id", patientID);
+
+                return params;
+            }
+        };
+
+        // Adding request to request queue
+        VolleyController.getInstance(mContext).addToRequestQueue(req);
+    }
+
+    /**
+     * Update dosage on remote medication DB
+     * */
+    private void updateDosageRemoteDB(final int med_id, final String effective_dosage) {
+//        medicationDBHandler = MedicationDatabaseSQLiteHandler.getInstance(this);
+//        final ProgressDialog pDialog = new ProgressDialog(this);
+//        pDialog.setMessage("Fetching data from server...");
+//        pDialog.setCancelable(false);
+//        pDialog.show();
+
+        StringRequest req = new StringRequest(Request.Method.POST, AppConfig.URL_UPDATE_DOSAGE,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        Log.d("updateDosageRemoteDB", response);
+
+                        try {
+                            JSONObject jObj = new JSONObject(response);
+                            boolean error = jObj.getBoolean("error");
+
+                            // Check for error node in json
+                            if (!error) {
+                                String operation = jObj.getString("operation");
+                                String row_nums = jObj.getString("row_nums");
+                                String dispMessage = operation;
+                                if (operation.equals("update")) {
+                                    dispMessage = "Updated " + row_nums + "row(s)";
+                                } else if (operation.equals("delete")) {
+                                    dispMessage = "Deleted " + row_nums + "row(s)";
+                                }
+                                Toast.makeText(mContext,
+                                        dispMessage, Toast.LENGTH_LONG).show();
+                            } else {
+                                // Error in login. Get the error message
+                                String errorMsg = jObj.getString("error_msg");
+                                Toast.makeText(mContext,
+                                        errorMsg, Toast.LENGTH_LONG).show();
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                            Toast.makeText(mContext,
+                                    "Error: " + e.getMessage(),
+                                    Toast.LENGTH_LONG).show();
+                        }
+//                        pDialog.hide();
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+//                VolleyLog.d(TAG, "Error: " + error.getMessage());
+                Toast.makeText(mContext,
+                        error.getMessage(), Toast.LENGTH_SHORT).show();
+//                pDialog.hide();
+            }
+        }) {
+
+            @Override
+            protected Map<String, String> getParams() {
+                // Posting parameters to login url
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("med_id", String.valueOf(med_id));
+                params.put("effective_dosage", effective_dosage);
+
+                return params;
+            }
+        };
+
+        // Adding request to request queue
+        VolleyController.getInstance(mContext).addToRequestQueue(req);
+    }
+
+    /**
+     * Insert stub consumptions remote DB
+     * */
+    private void insertDefaultConsumptionRemoteDB(final int med_id, final String consumption_time, final String is_taken, final String remaining_dosage) {
+        StringRequest req = new StringRequest(Request.Method.POST, AppConfig.URL_INSERT_CONSUMPTION,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        Log.d("insertConsumptionRemote", response);
+
+                        try {
+                            JSONObject jObj = new JSONObject(response);
+                            boolean error = jObj.getBoolean("error");
+
+                            // Check for error node in json
+                            if (!error) {
+                                Toast.makeText(mContext,
+                                        response, Toast.LENGTH_LONG).show();
+                            } else {
+                                // Error in login. Get the error message
+                                String errorMsg = jObj.getString("error_msg");
+                                Toast.makeText(mContext,
+                                        errorMsg, Toast.LENGTH_LONG).show();
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                            Toast.makeText(mContext,
+                                    "Error: " + e.getMessage(),
+                                    Toast.LENGTH_LONG).show();
+                        }
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+//                VolleyLog.d(TAG, "Error: " + error.getMessage());
+                Toast.makeText(mContext,
+                        error.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        }) {
+
+            @Override
+            protected Map<String, String> getParams() {
+                // Posting parameters to login url
+
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("med_id", String.valueOf(med_id));
+                params.put("consumption_time", consumption_time);
+                params.put("is_taken", is_taken);
+                params.put("remaining_dosage", remaining_dosage);
+
+                return params;
+            }
+        };
+
+        // Adding request to request queue
+        VolleyController.getInstance(mContext).addToRequestQueue(req);
+    }
+
+    /**
+     * Update consumption details on remote medication DB
+     * */
+    private void updateConsumptionsRemoteDB(final int med_id, final String consumption_time,
+                                            final String is_taken, final String remaining_dosage) {
+        StringRequest req = new StringRequest(Request.Method.POST, AppConfig.URL_UPDATE_CONSUMPTION,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        Log.d("updateConsRemoteDB", response);
+
+                        try {
+                            JSONObject jObj = new JSONObject(response);
+                            boolean error = jObj.getBoolean("error");
+
+                            // Check for error node in json
+                            if (!error) {
+                                String row_nums = jObj.getString("row_nums");
+                                String dispMessage = "Updated " + row_nums + "row(s)";
+                                Toast.makeText(mContext,
+                                        dispMessage, Toast.LENGTH_LONG).show();
+                            } else {
+                                // Error in updating. Get the error message
+                                String errorMsg = jObj.getString("error_msg");
+                                Toast.makeText(mContext,
+                                        errorMsg, Toast.LENGTH_LONG).show();
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                            Toast.makeText(mContext,
+                                    "Error: " + e.getMessage(),
+                                    Toast.LENGTH_LONG).show();
+                        }
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Toast.makeText(mContext,
+                        error.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        }) {
+
+            @Override
+            protected Map<String, String> getParams() {
+                // Posting parameters to login url
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("med_id", String.valueOf(med_id));
+                params.put("consumption_time", consumption_time);
+                params.put("is_taken", is_taken);
+                params.put("remaining_dosage", remaining_dosage);
+
+                return params;
+            }
+        };
+
+        // Adding request to request queue
+        VolleyController.getInstance(mContext).addToRequestQueue(req);
     }
 }

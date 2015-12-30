@@ -3,6 +3,9 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.reico_000.prescriptionreadernfc" >
 
+    <uses-feature
+        android:name="android.hardware.nfc"
+        android:required="false" />
     <uses-permission
         android:name="android.permission.NFC" />
     <uses-permission
@@ -114,9 +117,4 @@
             android:writePermission="com.example.reico_000.prescriptionreadernfc.WRITE" />
 
     </application>
-
-    <uses-feature
-        android:name="android.hardware.nfc"
-        android:required="true" />
-
 </manifest>

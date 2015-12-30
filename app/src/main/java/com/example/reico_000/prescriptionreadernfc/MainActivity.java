@@ -21,6 +21,7 @@ import android.content.IntentFilter;
 import android.database.ContentObserver;
 import android.database.Cursor;
 import android.net.Uri;
+import android.nfc.NfcManager;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.support.v4.app.FragmentActivity;
@@ -37,6 +38,7 @@ import android.widget.TextView;
 import java.io.UnsupportedEncodingException;
 import java.sql.Connection;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -68,7 +70,7 @@ public class MainActivity extends FragmentActivity
         implements Scan.OnFragmentInteractionListener,Inventory.OnFragmentInteractionListener,
         Monitoring.OnFragmentInteractionListener, NavigationDrawerFragment.NavigationDrawerCallbacks, Communicator {
 
-    private boolean useNFC = false;
+    private boolean useNFC = true;
     public String BrandName = "";
     public String GenericName = "";
     public String DosageForm = "";
@@ -203,7 +205,15 @@ public class MainActivity extends FragmentActivity
         mNavigationDrawerFragment.setUp(
                 R.id.navigation_drawer,
                 (DrawerLayout) findViewById(R.id.drawer_layout));
-
+        NfcManager manager = (NfcManager) this.getSystemService(Context.NFC_SERVICE);
+        NfcAdapter adapter = manager.getDefaultAdapter();
+        if (adapter != null && adapter.isEnabled()) {
+            useNFC = true;
+            //Yes NFC available
+        }else{
+            useNFC = false;
+            //Your device doesn't support NFC
+        }
         if (useNFC) {
             mNfcAdapter = NfcAdapter.getDefaultAdapter(this);
 
@@ -326,8 +336,8 @@ public class MainActivity extends FragmentActivity
         if (useNFC) {
             setupForegroundDispatch(this, mNfcAdapter);
         }
-
-        if (session.isLoggedIn()) {
+        PatientID = session.getPatientID();
+        if (!PatientID.equals("")) {
             populateLocalDB(PatientID);
         }
 
@@ -426,7 +436,7 @@ public class MainActivity extends FragmentActivity
                         PerDosage = readText(records[3]);
                         TotalDosage = readText(records[4]);
                         ConsumptionTime = readText(records[5]);
-                        //PatientID = readText(records[6]);
+                        PatientID = readText(records[6]);
                         Administration = readText(records[7]);
 
                         return BrandName;
@@ -592,46 +602,83 @@ public class MainActivity extends FragmentActivity
     }
 
     private void logout() {
-        new AlertDialog.Builder(this)
-            .setTitle("Logout Confirmation")
-            .setMessage("Do you really want to logout?")
-            .setIcon(android.R.drawable.ic_dialog_alert)
-            .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+        List<String> medicineList = new ArrayList<String>();
+        updateMedicineList(this, medicineList, PatientID, 2);
+        if (medicineList.size() > 0) {
+            String textToShow = "Remember to take the following medications:";
+            for (int i = 0; i < medicineList.size(); i++) {
+                textToShow += "\n- " + medicineList.get(i);
+            }
+            Toast.makeText(getApplicationContext(), textToShow, Toast.LENGTH_LONG).show();
+        }
+        else {
+            Toast.makeText(getApplicationContext(), "No need to take any medicine", Toast.LENGTH_LONG).show();
+        }
+    }
 
-                public void onClick(DialogInterface dialog, int whichButton) {
-                    session.setLogin(false);
-                    session.setPatientID("");
-                    Toast.makeText(getApplicationContext(), "Logout successful", Toast.LENGTH_LONG).show();
-                    Intent intent = new Intent(MainActivity.this, LoginActivity.class);
-                    startActivity(intent);
-                    finish();
-                }
-            })
-            .setNegativeButton(android.R.string.no, null).show();
+    public void updateMedicineList(Context context, List<String> medicineList, String PatientID, int timeMessage) {
+        ContentResolver resolver = context.getContentResolver();
+        String timeCode = "";
+
+        if (timeMessage == 0) {
+            timeCode = "M";
+        } else if (timeMessage == 1) {
+            timeCode = "A";
+        } else if (timeMessage == 2) {
+            timeCode = "E";
+        } else if (timeMessage == 3) {
+            timeCode = "BS";
+        }
+
+        Uri uri = MedicationContract.Medications.CONTENT_URI;
+        String[] projection = new String[]{MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID, MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME,
+                MedicationDatabaseSQLiteHandler.KEY_GENERIC_NAME, MedicationDatabaseSQLiteHandler.KEY_CONSUMPTION_TIME};
+        String selection = MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID + " = ?";
+        String[] selectionArgs = new String[]{PatientID};
+        Cursor cursor =
+                resolver.query(uri,
+                        projection,
+                        selection,
+                        selectionArgs,
+                        null);
+//        if (cursor != null) {
+        while (cursor.moveToNext()) {
+            String brandName = "";
+            String genericName = "";
+            String consumptionTime = "";
+            brandName = cursor.getString(cursor.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME));
+            genericName = cursor.getString(cursor.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_GENERIC_NAME));
+            consumptionTime = cursor.getString(cursor.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_CONSUMPTION_TIME));
+
+            if (consumptionTime.contains(timeCode)) {
+                medicineList.add(brandName + " (" + genericName + ")");
+            }
+        }
+        cursor.close();
     }
 
     ////////// FOR DEBUGGING PURPOSE ///////////
     private void scanItemOne() {
         BrandName = "Tykerb";
         GenericName = "Laptinib";
-        DosageForm = "250 mg Pill";
+        DosageForm = "Tablet";
         PerDosage = "5";
         TotalDosage = "105";
         ConsumptionTime = "M";
-        PatientID = "43462553";
+        PatientID = "G1159974K";
         Administration = "Should be taken on an empty stomach: Take at least 1 hr before or 1 hr after a meal. " +
                 "Do not eat/drink grapefruit products.";
         updateScanFragment();
     }
 
     private void scanItemTwo() {
-        BrandName = "Capecitabine";
-        GenericName = "Xeloda";
-        DosageForm = "500 mg Pill";
+        BrandName = "Xeloda";
+        GenericName = "Capecitabine";
+        DosageForm = "Tablet";
         PerDosage = "5";
-        TotalDosage = "28";
+        TotalDosage = "55";
         ConsumptionTime = "ME";
-        PatientID = "43462553";
+        PatientID = "G1159974K";
         Administration = "Should be taken with food: Take w/in ½ hr after meals.";
         updateScanFragment();
     }
@@ -639,11 +686,11 @@ public class MainActivity extends FragmentActivity
     private void scanItemThree() {
         BrandName = "Tykerb";
         GenericName = "Laptinib";
-        DosageForm = "250 mg Pill";
+        DosageForm = "Tablet";
         PerDosage = "5";
         TotalDosage = "105";
         ConsumptionTime = "M";
-        PatientID = "43462552";
+        PatientID = "G1159977K";
         Administration = "Should be taken on an empty stomach: Take at least 1 hr before or 1 hr after a meal. " +
                 "Do not eat/drink grapefruit products.";
         updateScanFragment();
@@ -690,8 +737,28 @@ public class MainActivity extends FragmentActivity
     }
 
     private void updateScanFragment() {
+        int saved_TotalDosage = -1;
+        session.setPatientID(PatientID);
         populateLocalDB(PatientID);
-
+        ContentResolver resolver = getContentResolver();
+        Uri uri = MedicationContract.Medications.CONTENT_URI;
+        String[] projection = new String[]{MedicationDatabaseSQLiteHandler.KEY_ID, MedicationDatabaseSQLiteHandler.KEY_TOTAL_DOSAGE,
+                MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME, MedicationDatabaseSQLiteHandler.KEY_DOSAGE_FORM};
+        String selection = MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME + " = ? AND " +
+                MedicationDatabaseSQLiteHandler.KEY_DOSAGE_FORM + " = ?";
+        String[] selectionArgs = new String[]{BrandName, DosageForm};
+        Cursor cursor =
+                resolver.query(uri,
+                        projection,
+                        selection,
+                        selectionArgs,
+                        null);
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                saved_TotalDosage = cursor.getInt(cursor.getColumnIndex("TotalDosage"));//MedicationDatabaseSQLiteHandler.COL_TOTALDOSAGE);
+            }
+            cursor.close();
+        }
         FragmentManager manager = getFragmentManager();
 
 //        Can't be implemented, commit will only be executed when the main thread is ready
@@ -706,7 +773,7 @@ public class MainActivity extends FragmentActivity
 
         if (mScanFragment != null) {
             Log.d("debug", "fragment is not null");
-            mScanFragment.changeText(BrandName, GenericName, DosageForm, PerDosage, TotalDosage, ConsumptionTime);
+            mScanFragment.changeText(BrandName, GenericName, DosageForm, PerDosage, Integer.toString(saved_TotalDosage), ConsumptionTime);
         } else {
             Log.e("DEBUG", "fragment is NULL");
         }
@@ -796,7 +863,7 @@ public class MainActivity extends FragmentActivity
                             MedicationDatabaseSQLiteHandler.KEY_REMAINING_DOSAGE};
                     selection = MedicationDatabaseSQLiteHandler.KEY_MEDICATION_ID + " = ? AND " +
                             MedicationDatabaseSQLiteHandler.KEY_IS_TAKEN + " = ?";
-                    selectionArgs = new String[]{String.valueOf(saved_Id), "false"};
+                    selectionArgs = new String[]{String.valueOf(saved_Id), "No"};
                     String sortOrder = MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT;
                     Cursor cursor2 =
                             resolver.query(MedicationContract.Consumption.CONTENT_URI,
@@ -813,10 +880,12 @@ public class MainActivity extends FragmentActivity
                             values.clear();
                             values.put(MedicationDatabaseSQLiteHandler.KEY_MEDICATION_ID, saved_Id);
                             values.put(MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT, curTime);
-                            values.put(MedicationDatabaseSQLiteHandler.KEY_IS_TAKEN, "true");
+                            values.put(MedicationDatabaseSQLiteHandler.KEY_IS_TAKEN, "Yes");
                             values.put(MedicationDatabaseSQLiteHandler.KEY_REMAINING_DOSAGE, effectiveTotalDosage);
                             noUpdated = resolver.update(MedicationContract.Consumption.CONTENT_URI, values, selection, selectionArgs);
-                            updateConsumptionsRemoteDB((int)saved_Id, curTime, "true", String.valueOf(effectiveTotalDosage));
+                            Toast.makeText(this, "saved_Id: " + saved_Id + ", curTime: " + curTime + ", totalDosage: " + effectiveTotalDosage,
+                                    Toast.LENGTH_LONG).show();
+                            updateConsumptionsRemoteDB((int)saved_Id, curTime, "Yes", String.valueOf(effectiveTotalDosage));
                         }
                         cursor2.close();
                     } else {
@@ -993,289 +1062,164 @@ public class MainActivity extends FragmentActivity
     /**
      * Populate local db with medication data from server
      * */
-    private void populateLocalDB(final String patientID) {
+    private void populateLocalDB(String patientID) {
+        // Pass the settings flags by inserting them in a bundle
+        Bundle settingsBundle = new Bundle();
+        settingsBundle.putBoolean(
+                ContentResolver.SYNC_EXTRAS_MANUAL, true);
+        settingsBundle.putBoolean(
+                ContentResolver.SYNC_EXTRAS_EXPEDITED, true);
+        settingsBundle.putString("functions", "populateLocalDB");
+        settingsBundle.putString("patient_id", patientID);
+        /*
+         * Request the sync for the default account, authority, and
+         * manual sync settings
+         */
+        ContentResolver.requestSync(mAccount, AUTHORITY, settingsBundle);
         // Tag used to cancel the request
-        medicationDBHandler = MedicationDatabaseSQLiteHandler.getInstance(this);
-        final ProgressDialog pDialog = new ProgressDialog(this);
-        pDialog.setMessage("Fetching data from server...");
-        pDialog.setCancelable(false);
-        pDialog.show();
-
-        medicationDBHandler = MedicationDatabaseSQLiteHandler.getInstance(this);
-
-        StringRequest req = new StringRequest(Request.Method.POST, AppConfig.URL_POPULATE_DB,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        Log.d("populateLocalDB Method", response);
-
-                        try {
-                            ContentResolver resolver = getContentResolver();
-                            ContentValues values = new ContentValues();
-
-                            // Parsing json array response
-                            // loop through each json object
-                            JSONArray jArr = new JSONArray(response);
-                            for (int i = 0; i < jArr.length(); i++) {
-
-                                JSONObject medication = (JSONObject) jArr.get(i);
-
-                                int id = medication.getInt("id");
-                                String brand_name = medication.getString("brand_name");
-                                String generic_name = medication.getString("generic_name");
-                                String dosage_form = medication.getString("dosage_form");
-                                String per_dosage = medication.getString("per_dosage");
-                                String total_dosage = medication.getString("total_dosage");
-                                String consumption_time = medication.getString("consumption_time");
-                                String patient_id = medication.getString("patient_id");
-                                String administration = medication.getString("administration");
-
-                                MedicationObject medObj = new MedicationObject(id, brand_name, generic_name, dosage_form,
-                                        per_dosage, total_dosage, consumption_time, patient_id, administration);
-
-                                values = medObj.getContentValues();
-                                if (!medicationDBHandler.CheckIsDataAlreadyInDBorNot(MedicationDatabaseSQLiteHandler.TABLE_MEDICATIONS,
-                                        MedicationDatabaseSQLiteHandler.KEY_ID, String.valueOf(id))) {
-                                    resolver.insert(MedicationContract.Medications.CONTENT_URI, values);
-                                }
-                                values.clear();
-                            }
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                            Toast.makeText(getApplicationContext(),
-                                    "Error: " + e.getMessage(),
-                                    Toast.LENGTH_LONG).show();
-                        }
-                        pDialog.hide();
-                    }
-                }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-//                VolleyLog.d(TAG, "Error: " + error.getMessage());
-                Toast.makeText(getApplicationContext(),
-                        error.getMessage(), Toast.LENGTH_SHORT).show();
-                pDialog.hide();
-            }
-        }) {
-
-            @Override
-            protected Map<String, String> getParams() {
-                // Posting parameters to login url
-                Map<String, String> params = new HashMap<String, String>();
-                params.put("patient_id", patientID);
-
-                return params;
-            }
-        };
-
-        // Adding request to request queue
-        VolleyController.getInstance(this).addToRequestQueue(req);
+//        medicationDBHandler = MedicationDatabaseSQLiteHandler.getInstance(this);
+//        final ProgressDialog pDialog = new ProgressDialog(this);
+//        pDialog.setMessage("Fetching data from server...");
+//        pDialog.setCancelable(false);
+//        pDialog.show();
+//
+//        medicationDBHandler = MedicationDatabaseSQLiteHandler.getInstance(this);
+//
+//        StringRequest req = new StringRequest(Request.Method.POST, AppConfig.URL_POPULATE_DB,
+//                new Response.Listener<String>() {
+//                    @Override
+//                    public void onResponse(String response) {
+//                        Log.d("populateLocalDB Method", response);
+//
+//                        try {
+//                            ContentResolver resolver = getContentResolver();
+//                            ContentValues values = new ContentValues();
+//
+//                            // Parsing json array response
+//                            // loop through each json object
+//                            JSONArray jArr = new JSONArray(response);
+//                            for (int i = 0; i < jArr.length(); i++) {
+//
+//                                JSONObject medication = (JSONObject) jArr.get(i);
+//
+//                                int id = medication.getInt("id");
+//                                String brand_name = medication.getString("brand_name");
+//                                String generic_name = medication.getString("generic_name");
+//                                String dosage_form = medication.getString("dosage_form");
+//                                String per_dosage = medication.getString("per_dosage");
+//                                String total_dosage = medication.getString("total_dosage");
+//                                String consumption_time = medication.getString("consumption_time");
+//                                String patient_id = medication.getString("patient_id");
+//                                String administration = medication.getString("administration");
+//
+//                                MedicationObject medObj = new MedicationObject(id, brand_name, generic_name, dosage_form,
+//                                        per_dosage, total_dosage, consumption_time, patient_id, administration);
+//
+//                                values = medObj.getContentValues();
+//                                if (!medicationDBHandler.CheckIsDataAlreadyInDBorNot(MedicationDatabaseSQLiteHandler.TABLE_MEDICATIONS,
+//                                        MedicationDatabaseSQLiteHandler.KEY_ID, String.valueOf(id))) {
+//                                    resolver.insert(MedicationContract.Medications.CONTENT_URI, values);
+//                                }
+//                                values.clear();
+//                            }
+//                        } catch (JSONException e) {
+//                            e.printStackTrace();
+//                            Toast.makeText(getApplicationContext(),
+//                                    "Error: " + e.getMessage(),
+//                                    Toast.LENGTH_LONG).show();
+//                        }
+//                        pDialog.hide();
+//                    }
+//                }, new Response.ErrorListener() {
+//            @Override
+//            public void onErrorResponse(VolleyError error) {
+////                VolleyLog.d(TAG, "Error: " + error.getMessage());
+//                Toast.makeText(getApplicationContext(),
+//                        error.getMessage(), Toast.LENGTH_SHORT).show();
+//                pDialog.hide();
+//            }
+//        }) {
+//
+//            @Override
+//            protected Map<String, String> getParams() {
+//                // Posting parameters to login url
+//                Map<String, String> params = new HashMap<String, String>();
+//                params.put("patient_id", patientID);
+//
+//                return params;
+//            }
+//        };
+//
+//        // Adding request to request queue
+//        VolleyController.getInstance(this).addToRequestQueue(req);
     }
 
     /**
      * Update dosage on remote medication DB
      * */
-    private void updateDosageRemoteDB(final int med_id, final String effective_dosage) {
-        // Tag used to cancel the request
-        medicationDBHandler = MedicationDatabaseSQLiteHandler.getInstance(this);
-        final ProgressDialog pDialog = new ProgressDialog(this);
-        pDialog.setMessage("Fetching data from server...");
-        pDialog.setCancelable(false);
-//        pDialog.show();
-
-        StringRequest req = new StringRequest(Request.Method.POST, AppConfig.URL_UPDATE_DOSAGE,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        Log.d("updateDosageRemoteDB", response);
-
-                        try {
-                            JSONObject jObj = new JSONObject(response);
-                            boolean error = jObj.getBoolean("error");
-
-                            // Check for error node in json
-                            if (!error) {
-                                String operation = jObj.getString("operation");
-                                String row_nums = jObj.getString("row_nums");
-                                String dispMessage = operation;
-                                if (operation.equals("update")) {
-                                    dispMessage = "Updated " + row_nums + "row(s)";
-                                } else if (operation.equals("delete")) {
-                                    dispMessage = "Deleted " + row_nums + "row(s)";
-                                }
-                                Toast.makeText(getApplicationContext(),
-                                        dispMessage, Toast.LENGTH_LONG).show();
-                            } else {
-                                // Error in login. Get the error message
-                                String errorMsg = jObj.getString("error_msg");
-                                Toast.makeText(getApplicationContext(),
-                                        errorMsg, Toast.LENGTH_LONG).show();
-                            }
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                            Toast.makeText(getApplicationContext(),
-                                    "Error: " + e.getMessage(),
-                                    Toast.LENGTH_LONG).show();
-                        }
-//                        pDialog.hide();
-                    }
-                }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-//                VolleyLog.d(TAG, "Error: " + error.getMessage());
-                Toast.makeText(getApplicationContext(),
-                        error.getMessage(), Toast.LENGTH_SHORT).show();
-//                pDialog.hide();
-            }
-        }) {
-
-            @Override
-            protected Map<String, String> getParams() {
-                // Posting parameters to login url
-                Map<String, String> params = new HashMap<String, String>();
-                params.put("med_id", String.valueOf(med_id));
-                params.put("effective_dosage", effective_dosage);
-
-                return params;
-            }
-        };
-
-        // Adding request to request queue
-        VolleyController.getInstance(this).addToRequestQueue(req);
+    private void updateDosageRemoteDB(int med_id, String effective_dosage) {
+        // Pass the settings flags by inserting them in a bundle
+        Bundle settingsBundle = new Bundle();
+        settingsBundle.putBoolean(
+                ContentResolver.SYNC_EXTRAS_MANUAL, true);
+        settingsBundle.putBoolean(
+                ContentResolver.SYNC_EXTRAS_EXPEDITED, true);
+        settingsBundle.putString("functions", "updateDosage");
+        settingsBundle.putInt("med_id", med_id);
+        settingsBundle.putString("effective_dosage", effective_dosage);
+        /*
+         * Request the sync for the default account, authority, and
+         * manual sync settings
+         */
+        ContentResolver.requestSync(mAccount, AUTHORITY, settingsBundle);
     }
 
     /**
      * Insert stub consumptions remote DB
      * */
-    private void insertDefaultConsumptionRemoteDB(final int med_id, final String consumption_time, final String remaining_dosage) {
-        // Tag used to cancel the request
-        medicationDBHandler = MedicationDatabaseSQLiteHandler.getInstance(this);
-
-        StringRequest req = new StringRequest(Request.Method.POST, AppConfig.URL_INSERT_CONSUMPTION,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        Log.d("insertConsumptionRemote", response);
-
-                        try {
-                            JSONObject jObj = new JSONObject(response);
-                            boolean error = jObj.getBoolean("error");
-
-                            // Check for error node in json
-                            if (!error) {
-//                                String uid = jObj.getString("uid");
-//
-//                                JSONObject details = jObj.getJSONObject("details");
-//                                String med_id = details.getString("med_id");
-//                                String consumption_time = details.getString("consumption_time");
-//                                String is_taken = details.getString("is_taken");
-//                                String remaining_dosage = details.getString("remaining_dosage");
-                                Toast.makeText(getApplicationContext(),
-                                        response, Toast.LENGTH_LONG).show();
-                            } else {
-                                // Error in login. Get the error message
-                                String errorMsg = jObj.getString("error_msg");
-                                Toast.makeText(getApplicationContext(),
-                                        errorMsg, Toast.LENGTH_LONG).show();
-                            }
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                            Toast.makeText(getApplicationContext(),
-                                    "Error: " + e.getMessage(),
-                                    Toast.LENGTH_LONG).show();
-                        }
-                    }
-                }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-//                VolleyLog.d(TAG, "Error: " + error.getMessage());
-                Toast.makeText(getApplicationContext(),
-                        error.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        }) {
-
-            @Override
-            protected Map<String, String> getParams() {
-                // Posting parameters to login url
-                Map<String, String> params = new HashMap<String, String>();
-                params.put("med_id", String.valueOf(med_id));
-                params.put("consumption_time", consumption_time);
-                params.put("is_taken", "unknown");
-                params.put("remaining_dosage", remaining_dosage);
-
-                return params;
-            }
-        };
-
-        // Adding request to request queue
-        VolleyController.getInstance(this).addToRequestQueue(req);
+    private void insertDefaultConsumptionRemoteDB(int med_id, String consumption_time, String is_taken, String remaining_dosage) {
+        // Pass the settings flags by inserting them in a bundle
+        Bundle settingsBundle = new Bundle();
+        settingsBundle.putBoolean(
+                ContentResolver.SYNC_EXTRAS_MANUAL, true);
+        settingsBundle.putBoolean(
+                ContentResolver.SYNC_EXTRAS_EXPEDITED, true);
+        settingsBundle.putString("functions", "insertConsumption");
+        settingsBundle.putInt("med_id", med_id);
+        settingsBundle.putString("consumption_time", consumption_time);
+        settingsBundle.putString("is_taken", is_taken);
+        settingsBundle.putString("remaining_dosage", remaining_dosage);
+        /*
+         * Request the sync for the default account, authority, and
+         * manual sync settings
+         */
+        ContentResolver.requestSync(mAccount, AUTHORITY, settingsBundle);
     }
 
     /**
-     * Update dosage on remote medication DB
+     * Update consumption details on remote medication DB
      * */
     private void updateConsumptionsRemoteDB(final int med_id, final String consumption_time,
                                             final String is_taken, final String remaining_dosage) {
-        medicationDBHandler = MedicationDatabaseSQLiteHandler.getInstance(this);
-
-        StringRequest req = new StringRequest(Request.Method.POST, AppConfig.URL_UPDATE_CONSUMPTION,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        Log.d("updateConsRemoteDB", response);
-
-                        try {
-                            JSONObject jObj = new JSONObject(response);
-                            boolean error = jObj.getBoolean("error");
-
-                            // Check for error node in json
-                            if (!error) {
-                                String row_nums = jObj.getString("row_nums");
-                                String dispMessage = "Updated " + row_nums + "row(s)";
-                                Toast.makeText(getApplicationContext(),
-                                        dispMessage, Toast.LENGTH_LONG).show();
-                            } else {
-                                // Error in updating. Get the error message
-                                String errorMsg = jObj.getString("error_msg");
-                                Toast.makeText(getApplicationContext(),
-                                        errorMsg, Toast.LENGTH_LONG).show();
-                            }
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                            Toast.makeText(getApplicationContext(),
-                                    "Error: " + e.getMessage(),
-                                    Toast.LENGTH_LONG).show();
-                        }
-//                        pDialog.hide();
-                    }
-                }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-//                VolleyLog.d(TAG, "Error: " + error.getMessage());
-                Toast.makeText(getApplicationContext(),
-                        error.getMessage(), Toast.LENGTH_SHORT).show();
-//                pDialog.hide();
-            }
-        }) {
-
-            @Override
-            protected Map<String, String> getParams() {
-                // Posting parameters to login url
-                Map<String, String> params = new HashMap<String, String>();
-                params.put("med_id", String.valueOf(med_id));
-                params.put("consumption_time", consumption_time);
-                params.put("is_taken", is_taken);
-                params.put("remaining_dosage", remaining_dosage);
-
-                return params;
-            }
-        };
-
-        // Adding request to request queue
-        VolleyController.getInstance(this).addToRequestQueue(req);
+        // Pass the settings flags by inserting them in a bundle
+        Bundle settingsBundle = new Bundle();
+        settingsBundle.putBoolean(
+                ContentResolver.SYNC_EXTRAS_MANUAL, true);
+        settingsBundle.putBoolean(
+                ContentResolver.SYNC_EXTRAS_EXPEDITED, true);
+        settingsBundle.putString("functions", "updateConsumption");
+        settingsBundle.putInt("med_id", med_id);
+        settingsBundle.putString("consumption_time", consumption_time);
+        settingsBundle.putString("is_taken", "Yes");
+        settingsBundle.putString("remaining_dosage", remaining_dosage);
+        /*
+         * Request the sync for the default account, authority, and
+         * manual sync settings
+         */
+        ContentResolver.requestSync(mAccount, AUTHORITY, settingsBundle);
     }
 
-    private void insertDefaultConsumptionData() {
+    public void insertDefaultConsumptionData() {
         Log.d("Test", "insertDefaultConsumptionData entered");
         ContentResolver resolver = getContentResolver();
         String[] projection = MedicationDatabaseSQLiteHandler.ALL_MED_KEYS;
@@ -1315,10 +1259,10 @@ public class MainActivity extends FragmentActivity
                 ContentValues values = new ContentValues();
                 values.put(MedicationDatabaseSQLiteHandler.KEY_MEDICATION_ID, med_id);
                 values.put(MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT, currentTimeStamp);
-                values.put(MedicationDatabaseSQLiteHandler.KEY_IS_TAKEN, "false");
+                values.put(MedicationDatabaseSQLiteHandler.KEY_IS_TAKEN, "No");
                 values.put(MedicationDatabaseSQLiteHandler.KEY_REMAINING_DOSAGE, remaining_dosage);
                 resolver.insert(MedicationContract.Consumption.CONTENT_URI, values);
-                insertDefaultConsumptionRemoteDB(med_id, currentTimeStamp, remaining_dosage);
+                insertDefaultConsumptionRemoteDB(med_id, currentTimeStamp, "No",remaining_dosage);
             }
         }
     }
