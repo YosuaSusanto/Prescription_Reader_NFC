@@ -23,6 +23,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.nfc.NfcManager;
 import android.os.Bundle;
+import android.os.Parcel;
 import android.os.StrictMode;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
@@ -230,6 +231,10 @@ public class MainActivity extends FragmentActivity
                 Toast.makeText(this, "NFC is enabled", Toast.LENGTH_LONG).show();
             }
         }
+        Intent intent = new Intent(this, StarterService.class);
+//        intent.putExtra("account", mAccount);
+//        intent.putExtra("patientID", PatientID);
+        this.startService(intent);
 
         handleIntent(getIntent());
     }
@@ -602,18 +607,22 @@ public class MainActivity extends FragmentActivity
     }
 
     private void logout() {
-        List<String> medicineList = new ArrayList<String>();
-        updateMedicineList(this, medicineList, PatientID, 2);
-        if (medicineList.size() > 0) {
-            String textToShow = "Remember to take the following medications:";
-            for (int i = 0; i < medicineList.size(); i++) {
-                textToShow += "\n- " + medicineList.get(i);
-            }
-            Toast.makeText(getApplicationContext(), textToShow, Toast.LENGTH_LONG).show();
-        }
-        else {
-            Toast.makeText(getApplicationContext(), "No need to take any medicine", Toast.LENGTH_LONG).show();
-        }
+        Intent intent = new Intent(this, StarterService.class);
+//        intent.putExtra("account", mAccount);
+//        intent.putExtra("patientID", PatientID);
+        this.startService(intent);
+//        List<String> medicineList = new ArrayList<String>();
+//        updateMedicineList(this, medicineList, PatientID, 2);
+//        if (medicineList.size() > 0) {
+//            String textToShow = "Remember to take the following medications:";
+//            for (int i = 0; i < medicineList.size(); i++) {
+//                textToShow += "\n- " + medicineList.get(i);
+//            }
+//            Toast.makeText(getApplicationContext(), textToShow, Toast.LENGTH_LONG).show();
+//        }
+//        else {
+//            Toast.makeText(getApplicationContext(), "No need to take any medicine", Toast.LENGTH_LONG).show();
+//        }
     }
 
     public void updateMedicineList(Context context, List<String> medicineList, String PatientID, int timeMessage) {

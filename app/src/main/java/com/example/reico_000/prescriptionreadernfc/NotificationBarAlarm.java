@@ -4,14 +4,21 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.media.RingtoneManager;
 import android.net.Uri;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
 
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
+
+import helper.SessionManager;
 
 /**
  * Created by reico_000 on 20/3/2015.
@@ -19,20 +26,23 @@ import java.util.Calendar;
 public class NotificationBarAlarm extends BroadcastReceiver {
 
     NotificationManager notifyManager;
+    List<String> medicineList;
 
     @Override
     public void onReceive(Context context, Intent intent) {
 
         Log.d("NotificationAlarm", "onReceive");
-
+        SessionManager session = new SessionManager(context);
+        String PatientID = session.getPatientID();
         notifyManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 
         // This Activity will be started when the user clicks the notification
         // in the notification bar
         Intent notificationIntent = new Intent(context, MainActivity.class);
 
-        PendingIntent contentIntent = PendingIntent.getActivity(context, 0, notificationIntent, 0);
-        Notification notif = new Notification(R.mipmap.ic_launcher, "Medication Reminder!", System.currentTimeMillis());
+        PendingIntent contentIntent = PendingIntent.getActivity(context, 0,notificationIntent, 0);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
 
         long current_time = System.currentTimeMillis();
         String[] titleArray = new String[4];
@@ -60,7 +70,7 @@ public class NotificationBarAlarm extends BroadcastReceiver {
         Calendar timeBS = Calendar.getInstance();
         timeBS.set(Calendar.HOUR_OF_DAY, 21);
         timeBS.set(Calendar.MINUTE, 50);
-        long timeForBS = timeEve.getTimeInMillis();
+        long timeForBS = timeBS.getTimeInMillis();
 
         if (current_time < timeForEve){
             timeMessage = 2;
@@ -74,13 +84,22 @@ public class NotificationBarAlarm extends BroadcastReceiver {
             timeMessage = 0;
         }
 
-        notif.sound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        medicineList = new ArrayList<String>();
+        String textToShow = "Remember to take the following medications:";
+        updateMedicineList(context, medicineList, PatientID, timeMessage);
+        Toast.makeText(context, Integer.toString(medicineList.size()), Toast.LENGTH_SHORT).show();
+        if (medicineList.size() > 0) {
+            for (int i = 0; i < medicineList.size(); i++) {
+                textToShow += "\n- " + medicineList.get(i);
+            }
+            builder = builder.setContentIntent(contentIntent)
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setAutoCancel(true).setContentTitle(titleArray[timeMessage])
+                    .setStyle(new NotificationCompat.BigTextStyle().bigText(textToShow))
+                    .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
 
-        notif.setLatestEventInfo(context, titleArray[timeMessage], "Remember to take your medications!", contentIntent);
-
-        notif.flags = Notification.FLAG_AUTO_CANCEL;
-
-        notifyManager.notify(timeMessage, notif);
+            notifyManager.notify(timeMessage, builder.build());
+        }
 
         //reset alarms when BS alarm is called
         if(current_time > timeForBS) {
@@ -89,4 +108,41 @@ public class NotificationBarAlarm extends BroadcastReceiver {
         }
     }
 
+    public void updateMedicineList(Context context, List<String> medicineList, String PatientID, int timeMessage) {
+        ContentResolver resolver = context.getContentResolver();
+        String timeCode = "";
+
+        if (timeMessage == 0) {
+            timeCode = "M";
+        } else if (timeMessage == 1) {
+            timeCode = "A";
+        } else if (timeMessage == 2) {
+            timeCode = "E";
+        } else if (timeMessage == 3) {
+            timeCode = "BS";
+        }
+
+        Uri uri = MedicationContract.Medications.CONTENT_URI;
+        String[] projection = new String[]{MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID, MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME,
+                MedicationDatabaseSQLiteHandler.KEY_GENERIC_NAME, MedicationDatabaseSQLiteHandler.KEY_CONSUMPTION_TIME};
+        String selection = MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID + " = ?";
+        String[] selectionArgs = new String[]{PatientID};
+        Cursor cursor =
+                resolver.query(uri,
+                        projection,
+                        selection,
+                        selectionArgs,
+                        null);
+        while (cursor.moveToNext()) {
+            String brandName, genericName, consumptionTime;
+            brandName = cursor.getString(cursor.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME));
+            genericName = cursor.getString(cursor.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_GENERIC_NAME));
+            consumptionTime = cursor.getString(cursor.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_CONSUMPTION_TIME));
+
+            if (consumptionTime.contains(timeCode)) {
+                medicineList.add(brandName + " (" + genericName + ")");
+            }
+        }
+        cursor.close();
+    }
 }
