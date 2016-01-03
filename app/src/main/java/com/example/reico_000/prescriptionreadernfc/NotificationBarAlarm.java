@@ -1,6 +1,5 @@
 package com.example.reico_000.prescriptionreadernfc;
 
-import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -12,7 +11,6 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
-import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -87,7 +85,6 @@ public class NotificationBarAlarm extends BroadcastReceiver {
         medicineList = new ArrayList<String>();
         String textToShow = "Remember to take the following medications:";
         updateMedicineList(context, medicineList, PatientID, timeMessage);
-        Toast.makeText(context, Integer.toString(medicineList.size()), Toast.LENGTH_SHORT).show();
         if (medicineList.size() > 0) {
             for (int i = 0; i < medicineList.size(); i++) {
                 textToShow += "\n- " + medicineList.get(i);
@@ -102,10 +99,10 @@ public class NotificationBarAlarm extends BroadcastReceiver {
         }
 
         //reset alarms when BS alarm is called
-        if(current_time > timeForBS) {
-            StarterService start = new StarterService();
-            start.scheduleAlarm();
-        }
+//        if(current_time > timeForBS) {
+//            StarterService start = new StarterService();
+//            start.scheduleAlarm();
+//        }
     }
 
     public void updateMedicineList(Context context, List<String> medicineList, String PatientID, int timeMessage) {

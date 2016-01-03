@@ -69,6 +69,8 @@
         <receiver
             android:name=".NotificationBarAlarm" />
         <receiver
+            android:name=".DefaultConsumptionReceiver" />
+        <receiver
             android:name=".AlarmReceiver"
             android:enabled="true"
             android:exported="true" >

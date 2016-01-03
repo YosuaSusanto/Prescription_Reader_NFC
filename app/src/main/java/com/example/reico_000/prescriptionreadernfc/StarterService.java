@@ -3,7 +3,6 @@ package com.example.reico_000.prescriptionreadernfc;
 
 import android.accounts.Account;
 import android.app.AlarmManager;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
@@ -17,32 +16,37 @@ import java.util.Calendar;
 
 public class StarterService extends Service {
     private static final String TAG = "StarterService";
-//    private Account mAccount = null;
-//    private String patientID = "";
+    private Account mAccount = null;
+    private String patientID = "";
 
     /**
      * The started service starts the AlarmManager.
      */
     @Override
     public void onStart(Intent intent, int startid) {
-//        mAccount = null;
-//        if (intent.getParcelableExtra("account") != null) {
-//            mAccount = intent.getParcelableExtra("account");
-//        }
+        mAccount = null;
+        if (intent.getParcelableExtra("account") != null) {
+            mAccount = intent.getParcelableExtra("account");
+        }
         scheduleAlarm();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startid) {
-//        if (intent.getParcelableExtra("account") != null) {
-//            mAccount = intent.getParcelableExtra("account");
-//        }
-//        if (intent.getParcelableExtra("patientID") != null) {
-//            patientID = intent.getStringExtra("patientID");
-//        }
+        if (intent.getParcelableExtra("account") != null) {
+            mAccount = intent.getParcelableExtra("account");
+        }
+        if (intent.getStringExtra("patientID") != null) {
+            patientID = intent.getStringExtra("patientID");
+        }
+        if (mAccount == null) {
+            Toast.makeText(this, "Account is null in Service!! PatientID: " + patientID, Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, "Account is not null and PatientID: " + patientID, Toast.LENGTH_SHORT).show();
+        }
 
         scheduleAlarm();
-        return START_STICKY;
+        return START_REDELIVER_INTENT;
     }
 
     @Override
@@ -60,10 +64,10 @@ public class StarterService extends Service {
         Intent i = new Intent(this, NotificationBarAlarm.class);
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
-//        Intent i2 = new Intent(this, DefaultConsumptionReceiver.class);
-//        i2.putExtra("account", mAccount);
-//        i2.putExtra("patientID", patientID);
-//        i2.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        Intent i2 = new Intent(this, DefaultConsumptionReceiver.class);
+        i2.putExtra("account", mAccount);
+        i2.putExtra("patientID", patientID);
+        i2.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
         Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.HOUR_OF_DAY, 7);
@@ -93,12 +97,12 @@ public class StarterService extends Service {
         calendar4.set(Calendar.MILLISECOND, 0);
         long sdl4 = calendar4.getTimeInMillis();
 
-//        Calendar calendar5 = Calendar.getInstance();
-//        calendar5.set(Calendar.HOUR_OF_DAY, 1);
-//        calendar5.set(Calendar.MINUTE, 0);
-//        calendar5.set(Calendar.SECOND, 0);
-//        calendar5.set(Calendar.MILLISECOND, 0);
-//        long sdl5 = calendar5.getTimeInMillis();
+        Calendar calendar5 = Calendar.getInstance();
+        calendar5.set(Calendar.HOUR_OF_DAY, 1);
+        calendar5.set(Calendar.MINUTE, 0);
+        calendar5.set(Calendar.SECOND, 0);
+        calendar5.set(Calendar.MILLISECOND, 0);
+        long sdl5 = calendar5.getTimeInMillis();
 //
         AlarmManager ALARM1 = (AlarmManager)getSystemService(ALARM_SERVICE);
         PendingIntent pi = PendingIntent.getBroadcast(this, 0, i, PendingIntent.FLAG_UPDATE_CURRENT);
@@ -112,15 +116,15 @@ public class StarterService extends Service {
         AlarmManager ALARM4 = (AlarmManager)getSystemService(ALARM_SERVICE);
         PendingIntent pi4 = PendingIntent.getBroadcast(this, 3, i, PendingIntent.FLAG_UPDATE_CURRENT);
 
-//        AlarmManager ALARM5 = (AlarmManager)getSystemService(ALARM_SERVICE);
-//        PendingIntent pi5 = PendingIntent.getBroadcast(this, 4, i2, PendingIntent.FLAG_UPDATE_CURRENT);
+        AlarmManager ALARM5 = (AlarmManager)getSystemService(ALARM_SERVICE);
+        PendingIntent pi5 = PendingIntent.getBroadcast(this, 4, i2, PendingIntent.FLAG_UPDATE_CURRENT);
 
         if (Build.VERSION.SDK_INT >= 19) {
             ALARM1.setRepeating(AlarmManager.RTC_WAKEUP, sdl, 1000 * 60 * 1440, pi);
             ALARM2.setRepeating(AlarmManager.RTC_WAKEUP, sdl2, 1000 * 60 * 1440, pi2);
             ALARM3.setRepeating(AlarmManager.RTC_WAKEUP, sdl3, 1000 * 60 * 1440, pi3);
             ALARM4.setRepeating(AlarmManager.RTC_WAKEUP, sdl4, 1000 * 60 * 1440, pi4);
-//            ALARM5.setRepeating(AlarmManager.RTC_WAKEUP, sdl5, 1000 * 60 * 1440, pi5);
+            ALARM5.setRepeating(AlarmManager.RTC_WAKEUP, sdl5, 1000 * 60 * 20, pi5);
         } else {
             ALARM1.set(AlarmManager.RTC_WAKEUP, sdl, pi);
             ALARM2.set(AlarmManager.RTC_WAKEUP, sdl2, pi2);

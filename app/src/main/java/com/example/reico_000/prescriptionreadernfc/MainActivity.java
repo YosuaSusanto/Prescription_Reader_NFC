@@ -232,8 +232,8 @@ public class MainActivity extends FragmentActivity
             }
         }
         Intent intent = new Intent(this, StarterService.class);
-//        intent.putExtra("account", mAccount);
-//        intent.putExtra("patientID", PatientID);
+        intent.putExtra("account", mAccount);
+        intent.putExtra("patientID", PatientID);
         this.startService(intent);
 
         handleIntent(getIntent());
@@ -274,6 +274,13 @@ public class MainActivity extends FragmentActivity
              * The account exists or some other error occurred. Log this, report it,
              * or handle it internally.
              */
+//            String accountName = ACCOUNT;
+//            Account[] accounts = accountManager.getAccountsByType(ACCOUNT_TYPE);
+//            for(Account account : accounts) {
+//                if(account.name.equals(accountName)) {
+//                    return newAccount;
+//                }
+//            }
             Log.e(TAG, "addAccountExplicitly fails, account might have already exists...");
             return null;
         }
@@ -871,9 +878,16 @@ public class MainActivity extends FragmentActivity
                             MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT, MedicationDatabaseSQLiteHandler.KEY_IS_TAKEN,
                             MedicationDatabaseSQLiteHandler.KEY_REMAINING_DOSAGE};
                     selection = MedicationDatabaseSQLiteHandler.KEY_MEDICATION_ID + " = ? AND " +
-                            MedicationDatabaseSQLiteHandler.KEY_IS_TAKEN + " = ?";
+                            MedicationDatabaseSQLiteHandler.KEY_IS_TAKEN + " = ? AND " +
+                            MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT + " >= date('now') AND " +
+                            MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT + " < date('now', '+1 day') AND " +
+                            MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT + " < datetime('now')";
+//                            MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT + " >= cast(now() as date) AND " +
+//                            MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT + " < cast((now() + interval 1 day) as date) AND " +
+//                            MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT + " < cast((now()) as datetime)";
                     selectionArgs = new String[]{String.valueOf(saved_Id), "No"};
-                    String sortOrder = MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT;
+                    String sortOrder = "(julianday('now') - julianday(" + MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT + ")) ASC";
+//                    String sortOrder = " TIMEDIFF(NOW(), " + MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT + ") ASC";
                     Cursor cursor2 =
                             resolver.query(MedicationContract.Consumption.CONTENT_URI,
                                     projection,
@@ -1066,6 +1080,88 @@ public class MainActivity extends FragmentActivity
         TotalDosage = "";
         ConsumptionTime = "";
         Administration = "";
+    }
+
+    public void displayToastForId(long idInDB) {
+        Log.d("displayToastForId", "Entered");
+        ContentResolver resolver = getContentResolver();
+        String[] projection = MedicationDatabaseSQLiteHandler.ALL_MED_KEYS;
+        String selection = MedicationDatabaseSQLiteHandler.KEY_ID + " = ?";
+        String[] selectionArgs = new String[]{String.valueOf(idInDB)};
+        Cursor cursor =
+                resolver.query(MedicationContract.Medications.CONTENT_URI,
+                        projection,
+                        selection,
+                        selectionArgs,
+                        null);
+        if (cursor != null) {
+
+            if (cursor.moveToFirst()) {
+                String info_administration = cursor.getString(cursor.getColumnIndex("Administration"));//MedicationDatabaseSQLiteHandler.COL_ADMINISTRATION);
+
+                new AlertDialog.Builder(this)
+                        .setTitle("Administration")
+                        .setMessage(info_administration)
+                        .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                // continue with delete
+                            }
+                        })
+                        .setIcon(android.R.drawable.ic_dialog_alert)
+                        .show();
+
+                //Toast.makeText(MainActivity.this, message, Toast.LENGTH_LONG).show();
+            }
+            cursor.close();
+        } else {
+            Log.e("displayToastForId", "Cursor is nullllll");
+        }
+    }
+
+    public void deleteId(long idInDB) {
+        Log.d("displayToastForId", "Entered");
+        ContentResolver resolver = getContentResolver();
+        String[] projection = MedicationDatabaseSQLiteHandler.ALL_MED_KEYS;
+        String selection = MedicationDatabaseSQLiteHandler.KEY_ID + " = ?";
+        String[] selectionArgs = new String[]{String.valueOf(idInDB)};
+        Cursor cursor =
+                resolver.query(MedicationContract.Medications.CONTENT_URI,
+                        projection,
+                        selection,
+                        selectionArgs,
+                        null);
+        if (cursor != null) {
+
+            if (cursor.moveToFirst()) {
+                final long idDB = cursor.getLong(cursor.getColumnIndex("_id"));//MedicationDatabaseSQLiteHandler.COL_ROWID);
+                final String info_BrandName = cursor.getString(cursor.getColumnIndex("BrandName"));//MedicationDatabaseSQLiteHandler.COL_BRANDNAME);
+
+                new AlertDialog.Builder(this)
+                        .setTitle("Delete Medication?")
+                        .setMessage("Delete " + info_BrandName + "?")
+                        .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                ContentResolver resolver1 = getContentResolver();
+                                long noDeleted = resolver1.delete
+                                        (MedicationContract.Medications.CONTENT_URI,
+                                                MedicationDatabaseSQLiteHandler.KEY_ID + " = ? ",
+                                                new String[]{String.valueOf(idDB)});
+                                Toast.makeText(MainActivity.this, info_BrandName + " has been deleted.", Toast.LENGTH_LONG).show();
+                            }
+                        })
+                        .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                            }
+                        })
+                        .setIcon(android.R.drawable.ic_dialog_alert)
+                        .show();
+
+                //Toast.makeText(MainActivity.this, message, Toast.LENGTH_LONG).show();
+            }
+            cursor.close();
+        } else {
+            Log.e("displayToastForId", "Cursor is nullllll");
+        }
     }
 
     /**
@@ -1326,88 +1422,6 @@ public class MainActivity extends FragmentActivity
             Log.e("DEBUG", "fragment is NULL");
         }
 //        cursor.close();
-    }
-
-    public void displayToastForId(long idInDB) {
-        Log.d("displayToastForId", "Entered");
-        ContentResolver resolver = getContentResolver();
-        String[] projection = MedicationDatabaseSQLiteHandler.ALL_MED_KEYS;
-        String selection = MedicationDatabaseSQLiteHandler.KEY_ID + " = ?";
-        String[] selectionArgs = new String[]{String.valueOf(idInDB)};
-        Cursor cursor =
-                resolver.query(MedicationContract.Medications.CONTENT_URI,
-                        projection,
-                        selection,
-                        selectionArgs,
-                        null);
-        if (cursor != null) {
-
-            if (cursor.moveToFirst()) {
-                String info_administration = cursor.getString(cursor.getColumnIndex("Administration"));//MedicationDatabaseSQLiteHandler.COL_ADMINISTRATION);
-
-                new AlertDialog.Builder(this)
-                        .setTitle("Administration")
-                        .setMessage(info_administration)
-                        .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int which) {
-                                // continue with delete
-                            }
-                        })
-                        .setIcon(android.R.drawable.ic_dialog_alert)
-                        .show();
-
-                //Toast.makeText(MainActivity.this, message, Toast.LENGTH_LONG).show();
-            }
-            cursor.close();
-        } else {
-            Log.e("displayToastForId", "Cursor is nullllll");
-        }
-    }
-
-    public void deleteId(long idInDB) {
-        Log.d("displayToastForId", "Entered");
-        ContentResolver resolver = getContentResolver();
-        String[] projection = MedicationDatabaseSQLiteHandler.ALL_MED_KEYS;
-        String selection = MedicationDatabaseSQLiteHandler.KEY_ID + " = ?";
-        String[] selectionArgs = new String[]{String.valueOf(idInDB)};
-        Cursor cursor =
-                resolver.query(MedicationContract.Medications.CONTENT_URI,
-                        projection,
-                        selection,
-                        selectionArgs,
-                        null);
-        if (cursor != null) {
-
-            if (cursor.moveToFirst()) {
-                final long idDB = cursor.getLong(cursor.getColumnIndex("_id"));//MedicationDatabaseSQLiteHandler.COL_ROWID);
-                final String info_BrandName = cursor.getString(cursor.getColumnIndex("BrandName"));//MedicationDatabaseSQLiteHandler.COL_BRANDNAME);
-
-                new AlertDialog.Builder(this)
-                        .setTitle("Delete Medication?")
-                        .setMessage("Delete " + info_BrandName + "?")
-                        .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int which) {
-                                ContentResolver resolver1 = getContentResolver();
-                                long noDeleted = resolver1.delete
-                                        (MedicationContract.Medications.CONTENT_URI,
-                                                MedicationDatabaseSQLiteHandler.KEY_ID + " = ? ",
-                                                new String[]{String.valueOf(idDB)});
-                                Toast.makeText(MainActivity.this, info_BrandName + " has been deleted.", Toast.LENGTH_LONG).show();
-                            }
-                        })
-                        .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int which) {
-                            }
-                        })
-                        .setIcon(android.R.drawable.ic_dialog_alert)
-                        .show();
-
-                //Toast.makeText(MainActivity.this, message, Toast.LENGTH_LONG).show();
-            }
-            cursor.close();
-        } else {
-            Log.e("displayToastForId", "Cursor is nullllll");
-        }
     }
 
     public static String getCurrentTimeStamp(){
