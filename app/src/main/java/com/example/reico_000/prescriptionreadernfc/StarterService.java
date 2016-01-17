@@ -120,11 +120,11 @@ public class StarterService extends Service {
         PendingIntent pi5 = PendingIntent.getBroadcast(this, 4, i2, PendingIntent.FLAG_UPDATE_CURRENT);
 
         if (Build.VERSION.SDK_INT >= 19) {
-            ALARM1.setRepeating(AlarmManager.RTC_WAKEUP, sdl, 1000 * 60 * 1440, pi);
-            ALARM2.setRepeating(AlarmManager.RTC_WAKEUP, sdl2, 1000 * 60 * 1440, pi2);
-            ALARM3.setRepeating(AlarmManager.RTC_WAKEUP, sdl3, 1000 * 60 * 1440, pi3);
-            ALARM4.setRepeating(AlarmManager.RTC_WAKEUP, sdl4, 1000 * 60 * 1440, pi4);
-            ALARM5.setRepeating(AlarmManager.RTC_WAKEUP, sdl5, 1000 * 60 * 20, pi5);
+            ALARM1.setRepeating(AlarmManager.RTC_WAKEUP, sdl, 1000 * 60 * 15, pi);
+//            ALARM2.setRepeating(AlarmManager.RTC_WAKEUP, sdl2, 1000 * 60 * 1440, pi2);
+//            ALARM3.setRepeating(AlarmManager.RTC_WAKEUP, sdl3, 1000 * 60 * 1440, pi3);
+//            ALARM4.setRepeating(AlarmManager.RTC_WAKEUP, sdl4, 1000 * 60 * 1440, pi4);
+            ALARM5.setRepeating(AlarmManager.RTC_WAKEUP, sdl5, 1000 * 60 * 1440, pi5);
         } else {
             ALARM1.set(AlarmManager.RTC_WAKEUP, sdl, pi);
             ALARM2.set(AlarmManager.RTC_WAKEUP, sdl2, pi2);

@@ -101,6 +101,8 @@ public final class MedicationContract {
             public static final String KEY_ID = "_id";
             public static final String KEY_MEDICATION_ID = "MedicationID";
             public static final String KEY_CONSUMED_AT = "ConsumedAt";
+            public static final String KEY_IS_TAKEN = "IsTaken";
+            public static final String KEY_REMAINING_DOSAGE = "RemainingDosage";
             public static final String[] PROJECTION_ALL = new String[] {KEY_ID, KEY_MEDICATION_ID, KEY_CONSUMED_AT};
             /**
              * The default sort order for
