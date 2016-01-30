@@ -29,6 +29,7 @@ public class NotificationBarAlarm extends BroadcastReceiver {
 
     NotificationManager notifyManager;
     List<String> medicineList;
+    List<String> lateMedicineList;
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -84,11 +85,18 @@ public class NotificationBarAlarm extends BroadcastReceiver {
         Log.d("Test", "Current time: " + current_time + ", timeMessage: " + timeMessage);
 
         medicineList = new ArrayList<String>();
+        lateMedicineList = new ArrayList<String>();
         String textToShow = "Remember to take the following medications:";
-        if (updateMedicineList(context, medicineList, PatientID, timeMessage)) {
+        if (updateMedicineList(context, medicineList, lateMedicineList, PatientID, timeMessage)) {
             if (medicineList.size() > 0) {
                 for (int i = 0; i < medicineList.size(); i++) {
                     textToShow += "\n- " + medicineList.get(i);
+                }
+            }
+            if (lateMedicineList.size() > 0) {
+                textToShow += "\n\n You have almost reached the next consumption time for these following medicaitons:";
+                for (int i = 0; i < lateMedicineList.size(); i++) {
+                    textToShow += "\n- " + lateMedicineList.get(i);
                 }
             }
             Intent notificationIntent = new Intent(context, MainActivity.class);
@@ -110,7 +118,7 @@ public class NotificationBarAlarm extends BroadcastReceiver {
                     .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
 //                .setVibrate(new long[] {1000, 3000, 1000, 3000, 1000});
 
-            notifyManager.notify(timeMessage, builder.build());
+            notifyManager.notify(0, builder.build());
         }
         //reset alarms when BS alarm is called
 //        if(current_time > timeForBS) {
@@ -119,10 +127,11 @@ public class NotificationBarAlarm extends BroadcastReceiver {
 //        }
     }
 
-    public boolean updateMedicineList(Context context, List<String> medicineList, String PatientID, int timeMessage) {
+    public boolean updateMedicineList(Context context, List<String> medicineList,
+                                      List<String> lateMedicineList, String PatientID, int timeMessage) {
         ContentResolver resolver = context.getContentResolver();
         Calendar currentTime, tempTime1, tempTime2;
-        boolean reminderOn = false;
+        boolean reminderOn = false, lateReminderOn = false;
         String timeCode = "", timeString = "", consumptionTime = "";
 
         if (timeMessage == 0) {
@@ -159,6 +168,7 @@ public class NotificationBarAlarm extends BroadcastReceiver {
             String brandName, genericName;
             int medId;
             reminderOn = false;
+            lateReminderOn = false;
 
             brandName = cursor.getString(cursor.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME));
             genericName = cursor.getString(cursor.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_GENERIC_NAME));
@@ -212,11 +222,29 @@ public class NotificationBarAlarm extends BroadcastReceiver {
             }
             for (int i = 0; i < consumptionTimeStartCalendar.size(); i++) {
                 currentTime = Calendar.getInstance();
+                if (i == consumptionTimeStartCalendar.size() - 1) {
+                    tempTime2 = (Calendar) consumptionTimeStartCalendar.get(0).clone();
+                    tempTime2.add(Calendar.DAY_OF_YEAR, 1);
+                } else {
+                    tempTime2 = (Calendar) consumptionTimeStartCalendar.get(i+1).clone();
+                }
+//                if (currentTime.after(consumptionTimeStartCalendar.get(i)) &&
+//                        currentTime.before(consumptionTimeEndCalendar.get(i))) {
+//                    reminderOn = true;
+//                    Log.d("Test", "reminder is on");
+//                    break;
+//                }
                 if (currentTime.after(consumptionTimeStartCalendar.get(i)) &&
-                        currentTime.before(consumptionTimeEndCalendar.get(i))) {
-                    reminderOn = true;
-                    Log.d("Test", "reminder is on");
-                    break;
+                        currentTime.before(tempTime2)) {
+                    if (currentTime.before(consumptionTimeEndCalendar.get(i))) {
+                        reminderOn = true;
+                        Log.d("Test", "reminder is on");
+                        break;
+                    } else {
+                        lateReminderOn = true;
+                        Log.d("Test", "late reminder is on");
+                        break;
+                    }
                 }
             }
 
@@ -245,12 +273,14 @@ public class NotificationBarAlarm extends BroadcastReceiver {
                 if (consumptionTime2.contains(timeString) && reminderOn) {
 //                if (consumptionTime2.contains(timeString)) {
                     medicineList.add(brandName + " (" + genericName + ")");
+                } else if (consumptionTime2.contains(timeString) && lateReminderOn) {
+                    lateMedicineList.add(brandName + " (" + genericName + ")");
                 }
             }
             cursor2.close();
         }
         cursor.close();
-        if (medicineList.size() > 0) {
+        if (medicineList.size() > 0 || lateMedicineList.size() > 0) {
             return true;
         } else {
             return false;
