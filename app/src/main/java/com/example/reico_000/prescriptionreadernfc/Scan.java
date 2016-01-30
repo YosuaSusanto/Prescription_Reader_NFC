@@ -45,7 +45,6 @@ public class Scan extends Fragment implements View.OnClickListener {
 
     private Button consumeButton;
     private Button resetButton;
-    private Button saveButton;
     Communicator comm;
     private Inventory.OnFragmentInteractionListener mListener;
 
@@ -99,7 +98,6 @@ public class Scan extends Fragment implements View.OnClickListener {
 
         consumeButton = (Button) view.findViewById(R.id.consumebutton);
         resetButton = (Button) view.findViewById(R.id.resetbutton);
-        saveButton = (Button) view.findViewById(R.id.savebutton);
 
         scan_Morning = (ImageView) view.findViewById(R.id.scan_morning);
         scan_Afternoon = (ImageView) view.findViewById(R.id.scan_afternoon);
@@ -108,7 +106,6 @@ public class Scan extends Fragment implements View.OnClickListener {
 
         consumeButton.setOnClickListener(this);
         resetButton.setOnClickListener(this);
-        saveButton.setOnClickListener(this);
 
         return view;
     }
@@ -149,9 +146,6 @@ public class Scan extends Fragment implements View.OnClickListener {
             comm.respondConsumeMed();
 
         } else if (id ==R.id.resetbutton) {
-
-        } else if (id == R.id.savebutton){
-            comm.respondSaveMedication();
 
         }
         comm.respondReset();

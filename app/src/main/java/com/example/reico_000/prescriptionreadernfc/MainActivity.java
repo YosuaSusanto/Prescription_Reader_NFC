@@ -192,12 +192,6 @@ public class MainActivity extends FragmentActivity
         mAccount = CreateSyncAccount(this);
 
         PatientID = session.getPatientID();
-//        if (PatientID == "") {
-//            // Launch login activity
-//            Intent intent = new Intent(MainActivity.this,
-//                    LoginActivity.class);
-//            startActivity(intent);
-//        }
         mNavigationDrawerFragment = (NavigationDrawerFragment)
                 getFragmentManager().findFragmentById(R.id.navigation_drawer);
         mTitle = getTitle();
@@ -380,16 +374,18 @@ public class MainActivity extends FragmentActivity
         Bundle extras = i.getExtras();
         if (extras != null) {
             String text = extras.getString("text");
-            new AlertDialog.Builder(this)
-                    .setTitle("Medication Reminder")
-                    .setMessage(text)
-                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int which) {
-                            // continue with delete
-                        }
-                    })
-                    .setIcon(android.R.drawable.ic_dialog_alert)
-                    .show();
+            if (text != null) {
+                new AlertDialog.Builder(this)
+                        .setTitle("Medication Reminder")
+                        .setMessage(text)
+                        .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                // continue with delete
+                            }
+                        })
+                        .setIcon(android.R.drawable.ic_dialog_alert)
+                        .show();
+            }
         }
 
         handleIntent(intent);
@@ -463,9 +459,9 @@ public class MainActivity extends FragmentActivity
                         DosageForm = readText(records[2]);
                         PerDosage = readText(records[3]);
                         TotalDosage = readText(records[4]);
-                        ConsumptionTime = readText(records[5]);
-                        PatientID = readText(records[6]);
-                        Administration = readText(records[7]);
+                        ConsumptionTime = readText(records[7]);
+//                        PatientID = readText(records[6]);
+//                        Administration = readText(records[7]);
 
                         return BrandName;
                     } catch (UnsupportedEncodingException e) {
@@ -663,35 +659,30 @@ public class MainActivity extends FragmentActivity
     }
 
     private void scanItemThree() {
-        BrandName = "Endoxan";
-        GenericName = "Cyclophosphamide";
-        DosageForm = "Tablet";
-        PerDosage = "4";
-        TotalDosage = "80";
-        ConsumptionTime = "MAEB";
-        PatientID = "G1159974K";
-        Administration = "";
-        updateScanFragment();
+        Intent intent = new Intent(this, NotificationBarAlarm.class);
+        sendBroadcast(intent);
     }
 
     private void scanItemFour() {
-        //FOR DEBUGGING PURPOSE
-//        ContentResolver resolver = this.getContentResolver();
-//        String selection = MedicationDatabaseSQLiteHandler.KEY_MEDICATION_ID + " = ? AND " +
-//                MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT + " >= date('now', 'localtime') AND " +
-//                MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT + " < date('now', 'localtime', '+1 day')";
-//        String[] selectionArgs = new String[]{Integer.toString(27)};
-//        long noDeleted = resolver.delete
-//                (MedicationContract.Consumption.CONTENT_URI,
-//                        selection,
-//                        selectionArgs);
-//        selectionArgs = new String[]{Integer.toString(28)};
-//        noDeleted = resolver.delete(MedicationContract.Consumption.CONTENT_URI,
-//                selection,
-//                selectionArgs);
-
-        Intent intent = new Intent(this, NotificationBarAlarm.class);
-        sendBroadcast(intent);
+        new AlertDialog.Builder(this)
+                .setTitle("Medication Course Completed")
+                .setMessage("Medication Consumption Completed\n" +
+                        "Medication Deleted from Inventory\n" +
+                        "Do you want to erase the NFC tag data?")
+                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        // continue with delete
+                        Intent intent = new Intent(MainActivity.this, WriteNfcTagActivity.class);
+                        startActivity(intent);
+                    }
+                })
+                .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        // continue with delete
+                    }
+                })
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .show();
     }
 
     private void getConsumption(int i) {
@@ -905,8 +896,16 @@ public class MainActivity extends FragmentActivity
                         new AlertDialog.Builder(this)
                                 .setTitle("Medication Course Completed")
                                 .setMessage("Medication Consumption Completed\n" +
-                                        "Medication Deleted from Inventory")
+                                        "Medication Deleted from Inventory\n" +
+                                        "Do you want to erase the NFC tag data?")
                                 .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        // continue with delete
+                                        Intent intent = new Intent(MainActivity.this, WriteNfcTagActivity.class);
+                                        startActivity(intent);
+                                    }
+                                })
+                                .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
                                     public void onClick(DialogInterface dialog, int which) {
                                         // continue with delete
                                     }
@@ -952,57 +951,6 @@ public class MainActivity extends FragmentActivity
                     .setIcon(android.R.drawable.ic_dialog_alert)
                     .show();
         }
-    }
-
-    public void respondSaveMedication() {
-        ContentResolver resolver = this.getContentResolver();
-        Uri uri = MedicationContract.Medications.CONTENT_URI;
-        String[] projection = new String[]{MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID, MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME,
-                MedicationDatabaseSQLiteHandler.KEY_GENERIC_NAME, MedicationDatabaseSQLiteHandler.KEY_ID};
-        String selection = MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID + " = ?";
-        String[] selectionArgs = new String[]{PatientID};
-
-        Cursor cursor =
-                resolver.query(uri,
-                        projection,
-                        selection,
-                        selectionArgs,
-                        null);
-        while (cursor.moveToNext()) {
-            String brandName, genericName;
-            int medId;
-            brandName = cursor.getString(cursor.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME));
-            genericName = cursor.getString(cursor.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_GENERIC_NAME));
-            medId = cursor.getInt(cursor.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_ID));
-
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US);
-            String timeStamp = dateFormat.format(new Date()); // Find todays date
-
-            uri = MedicationContract.Consumption.CONTENT_URI;
-            projection = new String[]{MedicationDatabaseSQLiteHandler.KEY_MEDICATION_ID,
-                    MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT, MedicationDatabaseSQLiteHandler.KEY_IS_TAKEN};
-            selection = MedicationDatabaseSQLiteHandler.KEY_MEDICATION_ID + " = ? AND " +
-                    MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT + " >= date('now', 'localtime') AND " +
-                    MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT + " < date('now', 'localtime', '+1 day')";
-            selectionArgs = new String[]{Integer.toString(medId)};
-            Cursor cursor2 =
-                    resolver.query(uri,
-                            projection,
-                            selection,
-                            selectionArgs,
-                            null);
-            while (cursor2.moveToNext()) {
-                String consumptionTime, isTaken;
-                consumptionTime = cursor2.getString(cursor2.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT));
-                isTaken = cursor2.getString(cursor2.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_IS_TAKEN));
-                Log.d("Test", "BrandName: " + brandName + ", medId: " + medId + ", consumptionTime: " + consumptionTime +
-                 ", isTaken: " + isTaken);
-                Toast.makeText(this, "BrandName: " + brandName + ", medId: " + medId + ", consumptionTime: " + consumptionTime +
-                        ", isTaken: " + isTaken, Toast.LENGTH_SHORT).show();
-            }
-            cursor2.close();
-        }
-        cursor.close();
     }
 
     public void respondReset() {

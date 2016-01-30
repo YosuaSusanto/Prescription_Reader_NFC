@@ -18,7 +18,8 @@
     <string name="action_scanItem1">Scan Item 1</string>
     <string name="action_scanItem2">Scan Item 2</string>
     <string name="action_scanItem3">Scan Item 3</string>
-    <string name="action_scanItem4">Scan Item 4</string>
+    <string name="action_showNotification">Show Notification</string>
+    <string name="action_eraseTagData">Erase Tag Data</string>
     <string name="action_loadStubConsumption">Load Stub Consumption</string>
     <string name="action_getConsumption1">Get Consumption 1</string>
     <string name="action_getConsumption2">Get Consumption 2</string>

@@ -24,12 +24,12 @@
         android:showAsAction="never" />
     <item
         android:id="@+id/action_scanItem3"
-        android:title="@string/action_scanItem3"
+        android:title="@string/action_showNotification"
         android:orderInCategory="100"
         android:showAsAction="never" />
     <item
         android:id="@+id/action_scanItem4"
-        android:title="@string/action_loadStubConsumption"
+        android:title="@string/action_eraseTagData"
         android:orderInCategory="100"
         android:showAsAction="never" />
 </menu>
