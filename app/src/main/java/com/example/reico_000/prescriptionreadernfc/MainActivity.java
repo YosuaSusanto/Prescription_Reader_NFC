@@ -10,7 +10,6 @@ import android.app.AlertDialog;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.PendingIntent;
-import android.app.ProgressDialog;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -23,7 +22,6 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.nfc.NfcManager;
 import android.os.Bundle;
-import android.os.Parcel;
 import android.os.StrictMode;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
@@ -42,9 +40,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;
@@ -53,16 +49,6 @@ import android.nfc.Tag;
 import android.nfc.tech.Ndef;
 import android.os.AsyncTask;
 import android.widget.Toast;
-
-import com.android.volley.Request;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonArrayRequest;
-import com.android.volley.toolbox.StringRequest;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import helper.SessionManager;
 
@@ -80,8 +66,6 @@ public class MainActivity extends FragmentActivity
     public String ConsumptionTime = "";
     public String PatientID = "";
     public String Administration = "";
-    private PendingIntent pendingIntent;
-    private PendingIntent pendingIntentAlarm;
     private MedicationDatabaseSQLiteHandler medicationDBHandler;
     private Connection connectionSQL = null;
 
@@ -91,7 +75,6 @@ public class MainActivity extends FragmentActivity
      */
     private NavigationDrawerFragment mNavigationDrawerFragment;
     private Scan mScanFragment;
-    private Inventory inventoryFragment;
     /**
      * Used to store the last screen title. For use in {@link #restoreActionBar()}.
      */
@@ -116,10 +99,6 @@ public class MainActivity extends FragmentActivity
     public static final String ACCOUNT = "dummyaccount";
     // Instance fields
     Account mAccount;
-    // A content URI for the content provider's data table
-    Uri mUri;
-    // A content resolver for accessing the provider
-    ContentResolver mResolver;
 
     TableObserver tableObserver;
 
@@ -711,8 +690,17 @@ public class MainActivity extends FragmentActivity
 
     private void updateScanFragment() {
         int saved_TotalDosage = -1;
-        session.setPatientID(PatientID);
-        populateLocalDB(PatientID);
+        if (!session.getPatientID().equals(PatientID)) {
+            session.setPatientID(PatientID);
+            populateLocalDB(PatientID);
+            Log.d("Test", "Local Database populated");
+            Intent intent = new Intent(this, DefaultConsumptionReceiver.class);
+            intent.putExtra("account", mAccount);
+            intent.putExtra("patientID", PatientID);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            sendBroadcast(intent);
+        }
+
         ContentResolver resolver = getContentResolver();
         Uri uri = MedicationContract.Medications.CONTENT_URI;
         String[] projection = new String[]{MedicationDatabaseSQLiteHandler.KEY_ID, MedicationDatabaseSQLiteHandler.KEY_TOTAL_DOSAGE,
@@ -832,7 +820,7 @@ public class MainActivity extends FragmentActivity
                 int effectiveTotalDosage = saved_TotalDosage - Integer.parseInt(PerDosage);
                 if (saved_Id > -1) {
                     ContentValues values = new ContentValues();
-                    long noUpdated;
+
                     uri = MedicationContract.Consumption.CONTENT_URI;
                     projection = new String[]{MedicationDatabaseSQLiteHandler.KEY_ID, MedicationDatabaseSQLiteHandler.KEY_MEDICATION_ID,
                             MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT, MedicationDatabaseSQLiteHandler.KEY_IS_TAKEN,
@@ -861,7 +849,7 @@ public class MainActivity extends FragmentActivity
                             values.put(MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT, curTime);
                             values.put(MedicationDatabaseSQLiteHandler.KEY_IS_TAKEN, "Yes");
                             values.put(MedicationDatabaseSQLiteHandler.KEY_REMAINING_DOSAGE, effectiveTotalDosage);
-                            noUpdated = resolver.update(MedicationContract.Consumption.CONTENT_URI, values, selection, selectionArgs);
+                            resolver.update(MedicationContract.Consumption.CONTENT_URI, values, selection, selectionArgs);
                             Toast.makeText(this, "saved_Id: " + saved_Id + ", curTime: " + curTime + ", totalDosage: " + effectiveTotalDosage,
                                     Toast.LENGTH_LONG).show();
                             updateConsumptionsRemoteDB((int)saved_Id, curTime, "Yes", String.valueOf(effectiveTotalDosage));
@@ -884,12 +872,12 @@ public class MainActivity extends FragmentActivity
                     values.clear();
                     values.put(MedicationDatabaseSQLiteHandler.KEY_TOTAL_DOSAGE, effectiveTotalDosage);
                     uri = ContentUris.withAppendedId(MedicationContract.Medications.CONTENT_URI, saved_Id);
-                    noUpdated = resolver.update(uri, values, selection, null);
+                    resolver.update(uri, values, selection, null);
                     updateDosageRemoteDB((int) saved_Id, String.valueOf(effectiveTotalDosage));
                     // If effectiveTotal Dosage is <1, delete medicine
                     // else just notify user consumption successful
                     if (effectiveTotalDosage < 1) {
-                        long noDeleted = resolver.delete
+                        resolver.delete
                                 (MedicationContract.Medications.CONTENT_URI,
                                         MedicationDatabaseSQLiteHandler.KEY_ID + " = ? ",
                                         new String[]{String.valueOf(saved_Id)});
@@ -1023,7 +1011,7 @@ public class MainActivity extends FragmentActivity
                         .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int which) {
                                 ContentResolver resolver1 = getContentResolver();
-                                long noDeleted = resolver1.delete
+                                resolver1.delete
                                         (MedicationContract.Medications.CONTENT_URI,
                                                 MedicationDatabaseSQLiteHandler.KEY_ID + " = ? ",
                                                 new String[]{String.valueOf(idDB)});
@@ -1062,82 +1050,6 @@ public class MainActivity extends FragmentActivity
          * manual sync settings
          */
         ContentResolver.requestSync(mAccount, AUTHORITY, settingsBundle);
-        // Tag used to cancel the request
-//        medicationDBHandler = MedicationDatabaseSQLiteHandler.getInstance(this);
-//        final ProgressDialog pDialog = new ProgressDialog(this);
-//        pDialog.setMessage("Fetching data from server...");
-//        pDialog.setCancelable(false);
-//        pDialog.show();
-//
-//        medicationDBHandler = MedicationDatabaseSQLiteHandler.getInstance(this);
-//
-//        StringRequest req = new StringRequest(Request.Method.POST, AppConfig.URL_POPULATE_DB,
-//                new Response.Listener<String>() {
-//                    @Override
-//                    public void onResponse(String response) {
-//                        Log.d("populateLocalDB Method", response);
-//
-//                        try {
-//                            ContentResolver resolver = getContentResolver();
-//                            ContentValues values = new ContentValues();
-//
-//                            // Parsing json array response
-//                            // loop through each json object
-//                            JSONArray jArr = new JSONArray(response);
-//                            for (int i = 0; i < jArr.length(); i++) {
-//
-//                                JSONObject medication = (JSONObject) jArr.get(i);
-//
-//                                int id = medication.getInt("id");
-//                                String brand_name = medication.getString("brand_name");
-//                                String generic_name = medication.getString("generic_name");
-//                                String dosage_form = medication.getString("dosage_form");
-//                                String per_dosage = medication.getString("per_dosage");
-//                                String total_dosage = medication.getString("total_dosage");
-//                                String consumption_time = medication.getString("consumption_time");
-//                                String patient_id = medication.getString("patient_id");
-//                                String administration = medication.getString("administration");
-//
-//                                MedicationObject medObj = new MedicationObject(id, brand_name, generic_name, dosage_form,
-//                                        per_dosage, total_dosage, consumption_time, patient_id, administration);
-//
-//                                values = medObj.getContentValues();
-//                                if (!medicationDBHandler.CheckIsDataAlreadyInDBorNot(MedicationDatabaseSQLiteHandler.TABLE_MEDICATIONS,
-//                                        MedicationDatabaseSQLiteHandler.KEY_ID, String.valueOf(id))) {
-//                                    resolver.insert(MedicationContract.Medications.CONTENT_URI, values);
-//                                }
-//                                values.clear();
-//                            }
-//                        } catch (JSONException e) {
-//                            e.printStackTrace();
-//                            Toast.makeText(getApplicationContext(),
-//                                    "Error: " + e.getMessage(),
-//                                    Toast.LENGTH_LONG).show();
-//                        }
-//                        pDialog.hide();
-//                    }
-//                }, new Response.ErrorListener() {
-//            @Override
-//            public void onErrorResponse(VolleyError error) {
-////                VolleyLog.d(TAG, "Error: " + error.getMessage());
-//                Toast.makeText(getApplicationContext(),
-//                        error.getMessage(), Toast.LENGTH_SHORT).show();
-//                pDialog.hide();
-//            }
-//        }) {
-//
-//            @Override
-//            protected Map<String, String> getParams() {
-//                // Posting parameters to login url
-//                Map<String, String> params = new HashMap<String, String>();
-//                params.put("patient_id", patientID);
-//
-//                return params;
-//            }
-//        };
-//
-//        // Adding request to request queue
-//        VolleyController.getInstance(this).addToRequestQueue(req);
     }
 
     /**
@@ -1184,6 +1096,8 @@ public class MainActivity extends FragmentActivity
     }
 
     private void populateListViewfromdb() {
+        Inventory inventoryFragment;
+        List<MedicationObject> medList = new ArrayList<MedicationObject>();
         Log.d("Test", "populateListViewfromdb entered");
         ContentResolver resolver = getContentResolver();
         String[] projection = MedicationDatabaseSQLiteHandler.ALL_MED_KEYS;
@@ -1196,31 +1110,35 @@ public class MainActivity extends FragmentActivity
                         selectionArgs,
                         null);
         Log.d("Test", "populateListViewfromdb entered(after cursor)");
-        if (cursor == null) {
-            Log.e("Cursor", "EROROOROROOROROROROROOR");
-        } else {
+        if (cursor.moveToFirst()) {
             Log.d("Cursor", "Not null?");
-
+            do {
+                MedicationObject medicationObject = MedicationObject.fromCursor(cursor);
+                medList.add(medicationObject);
+            } while (cursor.moveToNext());
+        } else {
+            Log.e("Cursor", "cursor is empty!!");
         }
 //        startManagingCursor(cursor);
-        Log.d("Cursor", "After managing cursor");
-        String[] fromFieldNames = new String[]{MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME, MedicationDatabaseSQLiteHandler.KEY_GENERIC_NAME,
-                MedicationDatabaseSQLiteHandler.KEY_PER_DOSAGE, MedicationDatabaseSQLiteHandler.KEY_DOSAGE_FORM,
-                MedicationDatabaseSQLiteHandler.KEY_TOTAL_DOSAGE, MedicationDatabaseSQLiteHandler.KEY_CONSUMPTION_TIME};
-        int[] toViewIDs = new int[]
-                {R.id.list_BrandName, R.id.list_GenericName, R.id.list_PerDosage, R.id.list_DosageForm, R.id.List_TotalDosage,
-                        R.id.list_ConsumptionTime};
+//        Log.d("Cursor", "After managing cursor");
+//        String[] fromFieldNames = new String[]{};
+//                {MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME, MedicationDatabaseSQLiteHandler.KEY_GENERIC_NAME,
+//                MedicationDatabaseSQLiteHandler.KEY_PER_DOSAGE, MedicationDatabaseSQLiteHandler.KEY_DOSAGE_FORM,
+//                MedicationDatabaseSQLiteHandler.KEY_TOTAL_DOSAGE, MedicationDatabaseSQLiteHandler.KEY_CONSUMPTION_TIME};
+//        int[] toViewIDs = new int[] {};
+//                {R.id.list_BrandName, R.id.list_GenericName, R.id.list_PerDosage, R.id.list_DosageForm, R.id.List_TotalDosage,
+//                        R.id.list_ConsumptionTime};
 
-        Log.d("Cursor", "After managing cursor");
-        SimpleCursorAdapter myCursorAdapter =
-                new SimpleCursorAdapter(
-                        this,        // Context
-                        R.layout.itemlayout,    // Row layout template
-                        cursor,                    // cursor (set of DB records to map)
-                        fromFieldNames,            // DB Column names
-                        toViewIDs                // View IDs to put information in
+//        Log.d("Cursor", "After managing cursor");
+//        SimpleCursorAdapter myCursorAdapter =
+//                new SimpleCursorAdapter(
+//                        this,        // Context
+//                        R.layout.itemlayout,    // Row layout template
+//                        cursor,                    // cursor (set of DB records to map)
+//                        fromFieldNames,            // DB Column names
+//                        toViewIDs                // View IDs to put information in
 //                        0
-                );
+//                );
 
 
         FragmentManager manager = getFragmentManager();
@@ -1228,7 +1146,10 @@ public class MainActivity extends FragmentActivity
         inventoryFragment = (Inventory) manager.findFragmentByTag("invFragment");
         if (inventoryFragment != null) {
             Log.d("debug", "fragment is not null");
-            inventoryFragment.populateList(myCursorAdapter);
+            MedicationListAdapter mAdapter = new MedicationListAdapter(this, medList);
+
+//            inventoryFragment.populateList(myCursorAdapter);
+            inventoryFragment.populateList(mAdapter);
         } else {
             Log.e("DEBUG", "fragment is NULL");
         }
