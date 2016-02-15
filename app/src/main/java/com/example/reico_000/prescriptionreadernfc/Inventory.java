@@ -1,7 +1,6 @@
 package com.example.reico_000.prescriptionreadernfc;
 
 import android.app.Activity;
-import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.app.Fragment;
@@ -10,9 +9,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.CursorAdapter;
 import android.widget.ListView;
-import android.widget.Toast;
 
 
 /**
@@ -126,10 +123,12 @@ public class Inventory extends Fragment {
         public void onFragmentInteraction(Uri uri);
     }
 
-    public void populateList(CursorAdapter cursorAdapter){
+//    public void populateList(CursorAdapter cursorAdapter){
+    public void populateList(MedicationListAdapter medicationListAdapter){
         Log.d("Test", "setAdapter entered");
 
-        InventoryList.setAdapter(cursorAdapter);
+        InventoryList.setAdapter(medicationListAdapter);
+//        InventoryList.setAdapter(cursorAdapter);
     }
 
     private void registerListClickCallback() {
