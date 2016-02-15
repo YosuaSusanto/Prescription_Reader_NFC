@@ -144,12 +144,13 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
                                 String patient_id = medication.getString("patient_id");
                                 String administration = medication.getString("administration");
 
-                                consumption_time = consumption_time.replace("Morning", "M");
-                                consumption_time = consumption_time.replace("Afternoon", "A");
-                                consumption_time = consumption_time.replace("Evening", "E");
-                                consumption_time = consumption_time.replace("Before sleep", "B");
-                                consumption_time = consumption_time.replace(",", "");
-                                consumption_time = consumption_time.replace(" ", "");
+//                                consumption_time = consumption_time.replace("Morning", "M");
+//                                consumption_time = consumption_time.replace("Afternoon", "A");
+//                                consumption_time = consumption_time.replace("Evening", "E");
+//                                consumption_time = consumption_time.replace("Before sleep", "B");
+                                //consumption_time = consumption_time.replace(",", "");
+//                                consumption_time = consumption_time.replace(" ", "");
+                                consumption_time = consumption_time.replaceAll(" +", " ");
 
                                 MedicationObject medObj = new MedicationObject(id, brand_name, generic_name, dosage_form,
                                         per_dosage, total_dosage, consumption_time, patient_id, administration);

@@ -165,7 +165,7 @@ public class NotificationBarAlarm extends BroadcastReceiver {
             List<String> consumptionTimeStart = new ArrayList<String>(), consumptionTimeEnd = new ArrayList<String>();
             List<Calendar> consumptionTimeStartCalendar = new ArrayList<Calendar>(), consumptionTimeEndCalendar = new ArrayList<Calendar>();
 
-            String brandName, genericName;
+            String brandName, genericName, currentReminderTime = "";
             int medId;
             reminderOn = false;
             lateReminderOn = false;
@@ -177,18 +177,35 @@ public class NotificationBarAlarm extends BroadcastReceiver {
             Log.d("Test", "BrandName: " + brandName + ", medId: " + medId);
 
             consumptionTime = consumptionTime.replace("BS", "B");
-            for (int i = 0; i < consumptionTime.length(); i++) {
-                char c = consumptionTime.charAt(i);
-                if (c == 'M') {
-                    timeString = "07:00:00";
-                } else if (c == 'A') {
-                    timeString = "12:00:00";
-                } else if (c == 'E') {
-                    timeString = "17:00:00";
-                } else if (c == 'B') {
-                    timeString = "22:00:00";
-                }
+            String[] consumptionTimeArr = consumptionTime.split(", ");
+//            for (int i = 0; i < consumptionTime.length(); i++) {
+            for (int i = 0; i < consumptionTimeArr.length; i++) {
+                timeString = consumptionTimeArr[i] + ":00";
+//                if (consumptionTime.contains("M") || consumptionTime.contains("A")
+//                        || consumptionTime.contains("E") || consumptionTime.contains("B")) {
+//                    char c = consumptionTime.charAt(i);
+//                    if (c == 'M') {
+//                        timeString = "07:00:00";
+//                    } else if (c == 'A') {
+//                        timeString = "12:00:00";
+//                    } else if (c == 'E') {
+//                        timeString = "17:00:00";
+//                    } else if (c == 'B') {
+//                        timeString = "22:00:00";
+//                    }
+//                }
                 consumptionTimeStart.add(timeString);
+
+                long current_time = System.currentTimeMillis();
+                Calendar timeAlarm = Calendar.getInstance();
+                String hour = timeString.substring(0, 2), minute = timeString.substring(3, 5);
+                timeAlarm.set(Calendar.HOUR_OF_DAY, Integer.parseInt(hour));
+                timeAlarm.set(Calendar.MINUTE, Integer.parseInt(minute));
+                long timeForAlarm = timeAlarm.getTimeInMillis();
+
+                if (current_time > timeForAlarm){
+                    currentReminderTime = timeString;
+                }
             }
             for (int i = 0; i < consumptionTimeStart.size(); i++) {
                 String[] startTime = consumptionTimeStart.get(i).split(":");
@@ -250,7 +267,7 @@ public class NotificationBarAlarm extends BroadcastReceiver {
 
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US);
             String timeStamp = dateFormat.format(new Date()); // Find todays date
-            timeStamp += " " + timeString;
+            timeStamp += " " + currentReminderTime;
             Log.d("Test", "TimeStamp: " + timeStamp);
 
             uri = MedicationContract.Consumption.CONTENT_URI;
@@ -270,10 +287,10 @@ public class NotificationBarAlarm extends BroadcastReceiver {
                 String consumptionTime2;
                 consumptionTime2 = cursor2.getString(cursor2.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT));
 
-                if (consumptionTime2.contains(timeString) && reminderOn) {
+                if (consumptionTime2.contains(currentReminderTime) && reminderOn) {
 //                if (consumptionTime2.contains(timeString)) {
                     medicineList.add(brandName + " (" + genericName + ")");
-                } else if (consumptionTime2.contains(timeString) && lateReminderOn) {
+                } else if (consumptionTime2.contains(currentReminderTime) && lateReminderOn) {
                     lateMedicineList.add(brandName + " (" + genericName + ")");
                 }
             }

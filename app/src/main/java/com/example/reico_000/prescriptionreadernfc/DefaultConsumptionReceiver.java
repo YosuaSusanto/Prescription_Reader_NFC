@@ -44,6 +44,7 @@ public class DefaultConsumptionReceiver extends BroadcastReceiver {
 
     public void insertDefaultConsumptionData(Context context, Account account, String patientID) {
         Log.d("Test", "insertDefaultConsumptionData entered");
+        Log.d("Test", "patientID: " + patientID);
         ContentResolver resolver = context.getContentResolver();
         Uri uri = MedicationContract.Medications.CONTENT_URI;
         String[] projection = MedicationDatabaseSQLiteHandler.ALL_MED_KEYS;
@@ -76,24 +77,28 @@ public class DefaultConsumptionReceiver extends BroadcastReceiver {
                             null);
             Log.d("Test", "cursor2.Length: " + cursor2.getCount());
             if (cursor2.getCount() == 0) {
-                for (int i = 0; i < consumptionTime.length(); i++) {
-                    char c = consumptionTime.charAt(i);
+                String[] consumptionTimeArr = consumptionTime.split(", ");
+//                for (int i = 0; i < consumptionTime.length(); i++) {
+                for (int i = 0; i < consumptionTimeArr.length; i++) {
+//                    char c = consumptionTime.charAt(i);
+                    String reminderTime = consumptionTimeArr[i] + ":00";
                     SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US);
                     String currentTimeStamp = dateFormat.format(new Date()); // Find todays date
-                    switch (c) {
-                        case 'M':
-                            currentTimeStamp += " 07:00:00";
-                            break;
-                        case 'A':
-                            currentTimeStamp += " 12:00:00";
-                            break;
-                        case 'E':
-                            currentTimeStamp += " 17:00:00";
-                            break;
-                        case 'B':
-                            currentTimeStamp += " 22:00:00";
-                            break;
-                    }
+                    currentTimeStamp += " " + reminderTime;
+//                    switch (c) {
+//                        case 'M':
+//                            currentTimeStamp += " 07:00:00";
+//                            break;
+//                        case 'A':
+//                            currentTimeStamp += " 12:00:00";
+//                            break;
+//                        case 'E':
+//                            currentTimeStamp += " 17:00:00";
+//                            break;
+//                        case 'B':
+//                            currentTimeStamp += " 22:00:00";
+//                            break;
+//                    }
                     ContentValues values = new ContentValues();
                     values.put(MedicationDatabaseSQLiteHandler.KEY_MEDICATION_ID, med_id);
                     values.put(MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT, currentTimeStamp);
