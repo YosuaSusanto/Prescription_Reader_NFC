@@ -606,6 +606,13 @@ public class MainActivity extends FragmentActivity
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            Fragment fragment;
+            FragmentManager fragmentManager = getFragmentManager();
+            fragment = new SettingsFragment();
+            fragmentManager.beginTransaction()
+                    .replace(R.id.container, fragment, "settingsFragment" )
+                    .commit();
+
             return true;
         } else if (id == R.id.action_logout) {
             logout();
