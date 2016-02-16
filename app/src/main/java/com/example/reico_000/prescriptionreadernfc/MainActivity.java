@@ -23,6 +23,7 @@ import android.net.Uri;
 import android.nfc.NfcManager;
 import android.os.Bundle;
 import android.os.StrictMode;
+import android.speech.tts.TextToSpeech;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -41,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;
@@ -85,6 +87,11 @@ public class MainActivity extends FragmentActivity
     private NfcAdapter mNfcAdapter;
 
     private AlarmManager manager;
+
+    //Text to speech
+    TextToSpeech textToSpeechObject;
+    int textToSpeechResult;
+    String stringToBeRead;
 
     // Constants
     // Content provider scheme
@@ -204,6 +211,21 @@ public class MainActivity extends FragmentActivity
                 Toast.makeText(this, "NFC is enabled", Toast.LENGTH_LONG).show();
             }
         }
+
+        //Text to Speech
+        textToSpeechObject = new TextToSpeech(MainActivity.this, new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if(status == TextToSpeech.SUCCESS){
+                    //Everything run well, set the language
+                    Locale current = getResources().getConfiguration().locale;
+                    textToSpeechResult = textToSpeechObject.setLanguage(current);
+                }else{
+                    Toast.makeText(getApplicationContext(),
+                            "Feature not supported in your device", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
         Intent intent = new Intent(this, StarterService.class);
         intent.putExtra("account", mAccount);
         intent.putExtra("patientID", PatientID);
@@ -493,6 +515,7 @@ public class MainActivity extends FragmentActivity
                 if (mScanFragment != null) {
                     Log.d("debug", "fragment is not null");
                     mScanFragment.changeText(BrandName, GenericName, DosageForm, PerDosage, TotalDosage, ConsumptionTime);
+                    readOutMedicationInfo();
                 } else {
                     Log.e("DEBUG", "fragment is NULL");
                 }
@@ -618,7 +641,7 @@ public class MainActivity extends FragmentActivity
         DosageForm = "Tablet";
         PerDosage = "5";
         TotalDosage = "105";
-        ConsumptionTime = "M";
+        ConsumptionTime = "07:00";
         PatientID = "G1159974K";
         Administration = "Should be taken on an empty stomach: Take at least 1 hr before or 1 hr after a meal. " +
                 "Do not eat/drink grapefruit products.";
@@ -631,7 +654,7 @@ public class MainActivity extends FragmentActivity
         DosageForm = "Tablet";
         PerDosage = "5";
         TotalDosage = "55";
-        ConsumptionTime = "ME";
+        ConsumptionTime = "07:00, 12:30, 17:45";
         PatientID = "G1159974K";
         Administration = "Should be taken with food: Take w/in ½ hr after meals.";
         updateScanFragment();
@@ -735,6 +758,7 @@ public class MainActivity extends FragmentActivity
         if (mScanFragment != null) {
             Log.d("debug", "fragment is not null");
             mScanFragment.changeText(BrandName, GenericName, DosageForm, PerDosage, Integer.toString(saved_TotalDosage), ConsumptionTime);
+            readOutMedicationInfo();
         } else {
             Log.e("DEBUG", "fragment is NULL");
         }
@@ -1154,6 +1178,73 @@ public class MainActivity extends FragmentActivity
             Log.e("DEBUG", "fragment is NULL");
         }
 //        cursor.close();
+    }
+
+//  When the patient tap the tag, the phone should read out: 1) Drug name,
+//  2) dosage form, 3) dosage strength, 4) dosage taken, 5) frequency, 6) consumption time
+    public void readOutMedicationInfo(){
+        String[] consumptionTimeArr = ConsumptionTime.split(", ");
+        int frequency = consumptionTimeArr.length;
+        String consumptionTimes = getTimeInAMPM(consumptionTimeArr[0]);
+        String timeOrTimes = " time a day at ";
+
+        if (frequency > 1) {
+            timeOrTimes = " times a day at ";
+            if (frequency == 2) {
+                consumptionTimes += " and " + getTimeInAMPM(consumptionTimeArr[1]);
+            } else {
+                for (int i = 1; i < consumptionTimeArr.length - 1; i++) {
+                    consumptionTimes += ", " + getTimeInAMPM(consumptionTimeArr[i]);
+                }
+                consumptionTimes += " and " +
+                        getTimeInAMPM(consumptionTimeArr[consumptionTimeArr.length-1]);
+            }
+        }
+
+
+        if(textToSpeechResult == TextToSpeech.LANG_NOT_SUPPORTED || textToSpeechResult == TextToSpeech.LANG_MISSING_DATA){
+            Toast.makeText(getApplicationContext(),
+                    "Feature not supported in your device", Toast.LENGTH_SHORT).show();
+
+        }else{
+            stringToBeRead = "This is " + BrandName + ". Take " + PerDosage + " "
+                    + DosageForm + " for " + frequency + timeOrTimes + consumptionTimes;
+            float rate = (float) 0.85;
+            textToSpeechObject.setSpeechRate(rate);
+            textToSpeechObject.speak(stringToBeRead, TextToSpeech.QUEUE_FLUSH, null);
+        }
+    }
+
+    // Convert time in 24 hours format into 12 hours format
+    public static String getTimeInAMPM(String time) {
+        String hour = time.substring(0, 2);
+        int intHour = Integer.parseInt(hour);
+        String min = time.substring(3);
+        int intMin = Integer.parseInt(min);
+
+        if (intHour >= 12) {
+            if (intHour > 12) {
+                intHour -= 12;
+            }
+            hour = intHour + " ";
+            if (intMin == 0) {
+                hour += "PM";
+            } else {
+                hour += intMin + "PM";
+            }
+        } else {
+            if (intHour == 0) {
+                intHour = 12;
+            }
+            hour = intHour + " ";
+            if (intMin == 0) {
+                hour += "AM";
+            } else {
+                hour += intMin + "AM";
+            }
+        }
+
+        return hour;
     }
 
     public static String getCurrentTimeStamp(){
