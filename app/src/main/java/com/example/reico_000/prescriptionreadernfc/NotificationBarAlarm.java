@@ -7,9 +7,12 @@ import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.media.AudioManager;
 import android.media.RingtoneManager;
 import android.net.Uri;
+import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationCompat;
 import android.text.format.Time;
 import android.util.Log;
@@ -36,6 +39,7 @@ public class NotificationBarAlarm extends BroadcastReceiver {
 
         Log.d("NotificationAlarm", "onReceive");
         SessionManager session = new SessionManager(context);
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
         String PatientID = session.getPatientID();
         notifyManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 
@@ -84,47 +88,54 @@ public class NotificationBarAlarm extends BroadcastReceiver {
 
         Log.d("Test", "Current time: " + current_time + ", timeMessage: " + timeMessage);
 
-        medicineList = new ArrayList<String>();
-        lateMedicineList = new ArrayList<String>();
-        String textToShow = "Remember to take the following medications:";
-        if (updateMedicineList(context, medicineList, lateMedicineList, PatientID, timeMessage)) {
-            if (medicineList.size() > 0) {
-                for (int i = 0; i < medicineList.size(); i++) {
-                    textToShow += "\n- " + medicineList.get(i);
+        if (prefs.getBoolean("pref_reminderToggle", true)) {
+            medicineList = new ArrayList<String>();
+            lateMedicineList = new ArrayList<String>();
+            String textToShow = "Remember to take the following medications:";
+            if (updateMedicineList(context, medicineList, lateMedicineList, PatientID, timeMessage)) {
+                if (medicineList.size() > 0) {
+                    for (int i = 0; i < medicineList.size(); i++) {
+                        textToShow += "\n- " + medicineList.get(i);
+                    }
                 }
-            }
-            if (lateMedicineList.size() > 0) {
-                textToShow += "\n\n You have almost reached the next consumption time for these following medicaitons:";
-                for (int i = 0; i < lateMedicineList.size(); i++) {
-                    textToShow += "\n- " + lateMedicineList.get(i);
+                if (lateMedicineList.size() > 0) {
+                    textToShow += "\n\n You have almost reached the next consumption time for these following medicaitons:";
+                    for (int i = 0; i < lateMedicineList.size(); i++) {
+                        textToShow += "\n- " + lateMedicineList.get(i);
+                    }
                 }
+                Intent notificationIntent = new Intent(context, MainActivity.class);
+                notificationIntent.putExtra("text", textToShow);
+                notificationIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                notificationIntent.setAction("foo");
+                PendingIntent contentIntent = PendingIntent.getActivity(context, 0, notificationIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT);
+
+                NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
+
+                builder = builder.setContentIntent(contentIntent)
+                        .setSmallIcon(R.mipmap.ic_launcher)
+                        .setAutoCancel(true).setContentTitle("Medications Reminder")
+                        .setContentText(textToShow)
+                        .setStyle(new NotificationCompat.BigTextStyle().bigText(textToShow))
+                        .setPriority(Notification.PRIORITY_HIGH);
+
+                AudioManager am = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
+                if (prefs.getBoolean("pref_reminderVibrationToggle", true) &&
+                        am.getRingerMode() != AudioManager.RINGER_MODE_SILENT) {
+                    builder = builder.setDefaults(Notification.DEFAULT_VIBRATE);
+                } else {
+                    builder = builder.setVibrate(new long[0]);
+                }
+
+                if (prefs.getBoolean("pref_reminderSoundToggle", true) &&
+                        am.getRingerMode() == AudioManager.RINGER_MODE_NORMAL) {
+                    builder = builder.setSound(RingtoneManager.
+                            getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
+                }
+                notifyManager.notify(0, builder.build());
             }
-            Intent notificationIntent = new Intent(context, MainActivity.class);
-            notificationIntent.putExtra("text", textToShow);
-            notificationIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-            notificationIntent.setAction("foo");
-            PendingIntent contentIntent = PendingIntent.getActivity(context, 0, notificationIntent,
-                    PendingIntent.FLAG_UPDATE_CURRENT);
-
-            NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
-
-            builder = builder.setContentIntent(contentIntent)
-                    .setSmallIcon(R.mipmap.ic_launcher)
-                    .setAutoCancel(true).setContentTitle("Medications Reminder")
-                    .setContentText(textToShow)
-                    .setStyle(new NotificationCompat.BigTextStyle().bigText(textToShow))
-                    .setPriority(Notification.PRIORITY_HIGH)
-                    .setDefaults(Notification.DEFAULT_VIBRATE)
-                    .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
-//                .setVibrate(new long[] {1000, 3000, 1000, 3000, 1000});
-
-            notifyManager.notify(0, builder.build());
         }
-        //reset alarms when BS alarm is called
-//        if(current_time > timeForBS) {
-//            StarterService start = new StarterService();
-//            start.scheduleAlarm();
-//        }
     }
 
     public boolean updateMedicineList(Context context, List<String> medicineList,

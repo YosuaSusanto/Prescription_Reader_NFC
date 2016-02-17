@@ -17,12 +17,14 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.database.ContentObserver;
 import android.database.Cursor;
 import android.net.Uri;
 import android.nfc.NfcManager;
 import android.os.Bundle;
 import android.os.StrictMode;
+import android.preference.PreferenceManager;
 import android.speech.tts.TextToSpeech;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
@@ -153,6 +155,7 @@ public class MainActivity extends FragmentActivity
         StrictMode.setThreadPolicy(policy);
         medicationDBHandler = MedicationDatabaseSQLiteHandler.getInstance(this);
         session  = new SessionManager(getApplicationContext());
+        PreferenceManager.setDefaultValues(this, R.xml.fragment_preferences, false);
 
         // Get the content resolver object for your app
 //        mResolver = getContentResolver();
@@ -310,7 +313,7 @@ public class MainActivity extends FragmentActivity
                 if (MIME_TEXT_PLAIN.equals(type)) {
 
                     Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
-                    new NdefReaderTask().execute(tag);
+                    new NdefReaderTask(this).execute(tag);
 
                 } else {
                     Log.d(TAG, "Wrong mime type: " + type);
@@ -324,7 +327,7 @@ public class MainActivity extends FragmentActivity
 
                 for (String tech : techList) {
                     if (searchedTech.equals(tech)) {
-                        new NdefReaderTask().execute(tag);
+                        new NdefReaderTask(this).execute(tag);
                         break;
                     }
                 }
@@ -432,7 +435,10 @@ public class MainActivity extends FragmentActivity
      * @author Ralf Wondratschek
      */
     private class NdefReaderTask extends AsyncTask<Tag, Void, String> {
-
+        private Context mContext;
+        public NdefReaderTask (Context context){
+            mContext = context;
+        }
         @Override
         protected String doInBackground(Tag... params) {
             Tag tag = params[0];
@@ -515,7 +521,13 @@ public class MainActivity extends FragmentActivity
                 if (mScanFragment != null) {
                     Log.d("debug", "fragment is not null");
                     mScanFragment.changeText(BrandName, GenericName, DosageForm, PerDosage, TotalDosage, ConsumptionTime);
-                    readOutMedicationInfo();
+                    SharedPreferences prefs = PreferenceManager
+                            .getDefaultSharedPreferences(mContext);
+                    Toast.makeText(mContext, "toggle is " + prefs.getBoolean("pref_textToSpeechToggle", false),
+                            Toast.LENGTH_SHORT).show();
+                    if (prefs.getBoolean("pref_textToSpeechToggle", false)) {
+                        readOutMedicationInfo();
+                    }
                 } else {
                     Log.e("DEBUG", "fragment is NULL");
                 }
@@ -611,6 +623,7 @@ public class MainActivity extends FragmentActivity
             fragment = new SettingsFragment();
             fragmentManager.beginTransaction()
                     .replace(R.id.container, fragment, "settingsFragment" )
+                    .addToBackStack(null)
                     .commit();
 
             return true;
@@ -765,7 +778,10 @@ public class MainActivity extends FragmentActivity
         if (mScanFragment != null) {
             Log.d("debug", "fragment is not null");
             mScanFragment.changeText(BrandName, GenericName, DosageForm, PerDosage, Integer.toString(saved_TotalDosage), ConsumptionTime);
-            readOutMedicationInfo();
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+            if (prefs.getBoolean("pref_textToSpeechToggle", false)) {
+                readOutMedicationInfo();
+            }
         } else {
             Log.e("DEBUG", "fragment is NULL");
         }
