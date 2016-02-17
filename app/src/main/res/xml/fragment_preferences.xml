@@ -13,6 +13,13 @@
         android:defaultValue="true"
         android:layout="@layout/preference_multiline"/>
     <SwitchPreference
+        android:dependency="pref_reminderToggle"
+        android:key="pref_reminderSoundToggle"
+        android:title="Play a sound when reminder pops up"
+        android:summary="Turning this off will cause the phone to not play any sound when the reminder pops up"
+        android:defaultValue="true"
+        android:layout="@layout/preference_multiline"/>
+    <SwitchPreference
         android:key="pref_textToSpeechToggle"
         android:title="Read out medication info"
         android:summary="Reads out the medication info when tapping a tag"
