@@ -72,7 +72,7 @@ public class MainActivity extends FragmentActivity
     public String Administration = "";
     private MedicationDatabaseSQLiteHandler medicationDBHandler;
     private Connection connectionSQL = null;
-
+    private Toast backToast = null;
     private SessionManager session;
     /**
      * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
@@ -153,6 +153,7 @@ public class MainActivity extends FragmentActivity
         setContentView(R.layout.activity_main);
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
+
         medicationDBHandler = MedicationDatabaseSQLiteHandler.getInstance(this);
         session  = new SessionManager(getApplicationContext());
         PreferenceManager.setDefaultValues(this, R.xml.fragment_preferences, false);
@@ -243,6 +244,29 @@ public class MainActivity extends FragmentActivity
 //        getContentResolver().unregisterContentObserver (tableObserver);
     }
 
+    @Override
+    public void onBackPressed() {
+        Log.d("BackTest", "onBackPressed called!");
+        FragmentManager manager = getFragmentManager();
+        mScanFragment = (Scan) manager.findFragmentByTag("scanFragment");
+        if (mScanFragment != null && mScanFragment.isVisible()) {
+            if(backToast != null && backToast.getView().getWindowToken() != null) {
+                Log.d("BackTest", "Exiting app...");
+                Toast.makeText(this, "Exiting app...", Toast.LENGTH_SHORT).show();
+                finish();
+            } else {
+                backToast = Toast.makeText(this, "Press back to exit", Toast.LENGTH_SHORT);
+                backToast.show();
+            }
+        } else {
+            //other stuff...
+//            super.onBackPressed();
+            Log.d("BackTest", "Switching to Scan fragment");
+            manager.beginTransaction()
+                    .replace(R.id.container, new Scan(), "scanFragment")
+                    .commit();
+        }
+    }
     /**
      * Create a new dummy account for the sync adapter
      *
@@ -339,6 +363,7 @@ public class MainActivity extends FragmentActivity
     protected void onResume() {
         super.onResume();
 
+        backToast = null;
         /**
          * It's important, that the activity is in the foreground (resumed). Otherwise
          * an IllegalStateException is thrown.
@@ -360,6 +385,10 @@ public class MainActivity extends FragmentActivity
          */
         if (useNFC) {
             stopForegroundDispatch(this, mNfcAdapter);
+        }
+
+        if (textToSpeechObject != null) {
+            textToSpeechObject.shutdown();
         }
         super.onPause();
     }
