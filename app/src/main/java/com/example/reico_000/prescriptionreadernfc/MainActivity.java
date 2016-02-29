@@ -34,11 +34,11 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.support.v4.widget.DrawerLayout;
-import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 
 import java.io.UnsupportedEncodingException;
 import java.sql.Connection;
+import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,12 +54,13 @@ import android.nfc.tech.Ndef;
 import android.os.AsyncTask;
 import android.widget.Toast;
 
+import helper.DataTransferInterface;
 import helper.SessionManager;
 
 
 public class MainActivity extends FragmentActivity
         implements Scan.OnFragmentInteractionListener,Inventory.OnFragmentInteractionListener,
-        Monitoring.OnFragmentInteractionListener, NavigationDrawerFragment.NavigationDrawerCallbacks, Communicator {
+        Monitoring.OnFragmentInteractionListener, NavigationDrawerFragment.NavigationDrawerCallbacks, Communicator, DataTransferInterface {
 
     private boolean useNFC = true;
     public String BrandName = "";
@@ -87,7 +88,8 @@ public class MainActivity extends FragmentActivity
     public static final String TAG = "NfcDemo";
     private TextView mTextView;
     private NfcAdapter mNfcAdapter;
-
+    private List<MedicationObject> medList;
+    private MedicationListAdapter mListAdapter;
     private AlarmManager manager;
 
     //Text to speech
@@ -216,20 +218,20 @@ public class MainActivity extends FragmentActivity
             }
         }
 
-        //Text to Speech
-        textToSpeechObject = new TextToSpeech(MainActivity.this, new TextToSpeech.OnInitListener() {
-            @Override
-            public void onInit(int status) {
-                if(status == TextToSpeech.SUCCESS){
-                    //Everything run well, set the language
-                    Locale current = getResources().getConfiguration().locale;
-                    textToSpeechResult = textToSpeechObject.setLanguage(current);
-                }else{
-                    Toast.makeText(getApplicationContext(),
-                            "Feature not supported in your device", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
+//        //Text to Speech
+//        textToSpeechObject = new TextToSpeech(MainActivity.this, new TextToSpeech.OnInitListener() {
+//            @Override
+//            public void onInit(int status) {
+//                if(status == TextToSpeech.SUCCESS){
+//                    //Everything run well, set the language
+//                    Locale current = getResources().getConfiguration().locale;
+//                    textToSpeechResult = textToSpeechObject.setLanguage(current);
+//                }else{
+//                    Toast.makeText(getApplicationContext(),
+//                            "Feature not supported in your device", Toast.LENGTH_SHORT).show();
+//                }
+//            }
+//        });
         Intent intent = new Intent(this, StarterService.class);
         intent.putExtra("account", mAccount);
         intent.putExtra("patientID", PatientID);
@@ -375,6 +377,20 @@ public class MainActivity extends FragmentActivity
         if (!PatientID.equals("")) {
             populateLocalDB(PatientID);
         }
+        //Text to Speech
+        textToSpeechObject = new TextToSpeech(MainActivity.this, new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if(status == TextToSpeech.SUCCESS){
+                    //Everything run well, set the language
+                    Locale current = getResources().getConfiguration().locale;
+                    textToSpeechResult = textToSpeechObject.setLanguage(current);
+                }else{
+                    Toast.makeText(getApplicationContext(),
+                            "Feature not supported in your device", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
 //        getContentResolver().requestSync(mAccount, MedicationContract.AUTHORITY, extras);
     }
 
@@ -677,23 +693,30 @@ public class MainActivity extends FragmentActivity
     }
 
     private void logout() {
-        Intent intent = new Intent(this, StarterService.class);
+        Intent intent = new Intent(this, DefaultConsumptionReceiver.class);
         intent.putExtra("account", mAccount);
         intent.putExtra("patientID", PatientID);
-        this.startService(intent);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        sendBroadcast(intent);
     }
 
+    @Override
+    public void setValues(ArrayList<?> al) {
+//        medList.remove((MedicationObject) al.get(0));
+//        medList.add((MedicationObject) al.get(1));
+//        mListAdapter.notifyDataSetChanged();
+        updateConsumptionTime(String.valueOf(((MedicationObject) al.get(1)).get_id()), ((MedicationObject) al.get(1)).get_consumptionTime());
+    }
     ////////// FOR DEBUGGING PURPOSE ///////////
     private void scanItemOne() {
-        BrandName = "Tykerb";
-        GenericName = "Laptinib";
+        BrandName = "Leukeran";
+        GenericName = "Chlorambucil";
         DosageForm = "Tablet";
         PerDosage = "5";
-        TotalDosage = "105";
-        ConsumptionTime = "07:00";
+        TotalDosage = "50";
+        ConsumptionTime = "01:00, 12:00";
         PatientID = "G1159974K";
-        Administration = "Should be taken on an empty stomach: Take at least 1 hr before or 1 hr after a meal. " +
-                "Do not eat/drink grapefruit products.";
+        Administration = "";
         updateScanFragment();
     }
 
@@ -723,6 +746,7 @@ public class MainActivity extends FragmentActivity
                 .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
                         // continue with delete
+                        stopForegroundDispatch(MainActivity.this, mNfcAdapter);
                         Intent intent = new Intent(MainActivity.this, WriteNfcTagActivity.class);
                         startActivity(intent);
                     }
@@ -762,25 +786,37 @@ public class MainActivity extends FragmentActivity
 
     private void updateScanFragment() {
         int saved_TotalDosage = -1;
+        ContentResolver resolver = getContentResolver();
+        Uri uri = MedicationContract.Medications.CONTENT_URI;
+        String[] projection = new String[]{MedicationDatabaseSQLiteHandler.KEY_ID, MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID,
+                MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME};
+        String selection = MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID + " = ?";
+        String[] selectionArgs;
+        Cursor cursor;
+
         if (!session.getPatientID().equals(PatientID)) {
             session.setPatientID(PatientID);
             populateLocalDB(PatientID);
             Log.d("Test", "Local Database populated");
-            Intent intent = new Intent(this, DefaultConsumptionReceiver.class);
-            intent.putExtra("account", mAccount);
-            intent.putExtra("patientID", PatientID);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            sendBroadcast(intent);
+            if (!PatientID.equals("")) {
+                Intent intent = new Intent(this, DefaultConsumptionReceiver.class);
+                intent.putExtra("account", mAccount);
+                intent.putExtra("patientID", PatientID);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                sendBroadcast(intent);
+            }
         }
 
-        ContentResolver resolver = getContentResolver();
-        Uri uri = MedicationContract.Medications.CONTENT_URI;
-        String[] projection = new String[]{MedicationDatabaseSQLiteHandler.KEY_ID, MedicationDatabaseSQLiteHandler.KEY_TOTAL_DOSAGE,
-                MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME, MedicationDatabaseSQLiteHandler.KEY_DOSAGE_FORM};
-        String selection = MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME + " = ? AND " +
-                MedicationDatabaseSQLiteHandler.KEY_DOSAGE_FORM + " = ?";
-        String[] selectionArgs = new String[]{BrandName, DosageForm};
-        Cursor cursor =
+        resolver = getContentResolver();
+        uri = MedicationContract.Medications.CONTENT_URI;
+        projection = new String[]{MedicationDatabaseSQLiteHandler.KEY_ID, MedicationDatabaseSQLiteHandler.KEY_TOTAL_DOSAGE,
+                MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME, MedicationDatabaseSQLiteHandler.KEY_DOSAGE_FORM,
+                MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID};
+        selection = MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME + " = ? AND " +
+                MedicationDatabaseSQLiteHandler.KEY_DOSAGE_FORM + " = ? AND " +
+                MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID + " = ?";
+        selectionArgs = new String[]{BrandName, DosageForm, PatientID};
+        cursor =
                 resolver.query(uri,
                         projection,
                         selection,
@@ -806,7 +842,13 @@ public class MainActivity extends FragmentActivity
 
         if (mScanFragment != null) {
             Log.d("debug", "fragment is not null");
-            mScanFragment.changeText(BrandName, GenericName, DosageForm, PerDosage, Integer.toString(saved_TotalDosage), ConsumptionTime);
+            String tempDosage;
+            if (saved_TotalDosage != -1) {
+                tempDosage = Integer.toString(saved_TotalDosage);
+            } else {
+                tempDosage = TotalDosage;
+            }
+            mScanFragment.changeText(BrandName, GenericName, DosageForm, PerDosage, tempDosage, ConsumptionTime);
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
             if (prefs.getBoolean("pref_textToSpeechToggle", false)) {
                 readOutMedicationInfo();
@@ -914,24 +956,69 @@ public class MainActivity extends FragmentActivity
                                     selection,
                                     selectionArgs,
                                     sortOrder);
+
+                    String selection2 = MedicationDatabaseSQLiteHandler.KEY_MEDICATION_ID + " = ? AND " +
+                            MedicationDatabaseSQLiteHandler.KEY_IS_TAKEN + " = ? AND " +
+                            MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT + " >= date('now', 'localtime') AND " +
+                            MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT + " < date('now', 'localtime', '+1 day') AND " +
+                            MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT + " < datetime('now', 'localtime')";
+                    String[] selectionArgs2 = new String[]{String.valueOf(saved_Id), "Yes"};
+                    Cursor cursor3 =
+                            resolver.query(uri,
+                                    projection,
+                                    selection2,
+                                    selectionArgs2,
+                                    sortOrder);
+
+                    String lastConsumptionTimeToday = "", consumptionTimeToBeUpdated = "";
+                    if (cursor3 != null) {
+                        if (cursor3.moveToFirst()) {
+                            lastConsumptionTimeToday = cursor3.getString(cursor3.getColumnIndex("ConsumptionTime"));
+                        }
+                    }
                     if (cursor2 != null) {
                         if (cursor2.moveToFirst()) {
                             long consumption_Id = cursor2.getLong(cursor2.getColumnIndex("_id"));//MedicationDatabaseSQLiteHandler.COL_ROWID);
                             String curTime = getCurrentTimeStamp();
-                            selection = MedicationDatabaseSQLiteHandler.KEY_ID + " = ?";
-                            selectionArgs = new String[]{String.valueOf(consumption_Id)};
-                            values.clear();
-                            values.put(MedicationDatabaseSQLiteHandler.KEY_MEDICATION_ID, saved_Id);
-                            values.put(MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT, curTime);
-                            values.put(MedicationDatabaseSQLiteHandler.KEY_IS_TAKEN, "Yes");
-                            values.put(MedicationDatabaseSQLiteHandler.KEY_REMAINING_DOSAGE, effectiveTotalDosage);
-                            resolver.update(MedicationContract.Consumption.CONTENT_URI, values, selection, selectionArgs);
-                            Toast.makeText(this, "saved_Id: " + saved_Id + ", curTime: " + curTime + ", totalDosage: " + effectiveTotalDosage,
-                                    Toast.LENGTH_LONG).show();
-                            updateConsumptionsRemoteDB((int)saved_Id, curTime, "Yes", String.valueOf(effectiveTotalDosage));
+                            consumptionTimeToBeUpdated = cursor2.getString(cursor2.getColumnIndex("ConsumptionTime"));
+                            SimpleDateFormat s1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                            Date dateNo = s1.parse(consumptionTimeToBeUpdated, new ParsePosition(0));
+                            Date dateYes = s1.parse(lastConsumptionTimeToday, new ParsePosition(0));
+
+//                            if ("no" > "yes" || lastConsumptionTimeToday.equals("")) {
+                            if (lastConsumptionTimeToday.equals("") || dateNo.compareTo(dateYes) > 0) {
+                                selection = MedicationDatabaseSQLiteHandler.KEY_ID + " = ?";
+                                selectionArgs = new String[]{String.valueOf(consumption_Id)};
+                                values.clear();
+                                values.put(MedicationDatabaseSQLiteHandler.KEY_MEDICATION_ID, saved_Id);
+                                values.put(MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT, curTime);
+                                values.put(MedicationDatabaseSQLiteHandler.KEY_IS_TAKEN, "Yes");
+                                values.put(MedicationDatabaseSQLiteHandler.KEY_REMAINING_DOSAGE, effectiveTotalDosage);
+                                resolver.update(MedicationContract.Consumption.CONTENT_URI, values, selection, selectionArgs);
+                                Toast.makeText(this, "saved_Id: " + saved_Id + ", curTime: " + curTime + ", totalDosage: " + effectiveTotalDosage,
+                                        Toast.LENGTH_LONG).show();
+                                updateConsumptionsRemoteDB((int)saved_Id, curTime, "Yes", String.valueOf(effectiveTotalDosage));
+                            } else { // dateNo.compareTo(dateYes) < 0
+                                values = new ContentValues();
+                                values.put(MedicationDatabaseSQLiteHandler.KEY_MEDICATION_ID, saved_Id);
+                                values.put(MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT, curTime);
+                                values.put(MedicationDatabaseSQLiteHandler.KEY_IS_TAKEN, "Overdose");
+                                values.put(MedicationDatabaseSQLiteHandler.KEY_REMAINING_DOSAGE, effectiveTotalDosage);
+                                resolver.insert(MedicationContract.Consumption.CONTENT_URI, values);
+                                insertConsumptionRemoteDB((int) saved_Id, curTime, "Overdose", String.valueOf(effectiveTotalDosage));
+                            }
+
                         }
                         cursor2.close();
-                    } else {
+                    } else { // Taken all medication
+                        String curTime = getCurrentTimeStamp();
+                        values = new ContentValues();
+                        values.put(MedicationDatabaseSQLiteHandler.KEY_MEDICATION_ID, saved_Id);
+                        values.put(MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT, curTime);
+                        values.put(MedicationDatabaseSQLiteHandler.KEY_IS_TAKEN, "Overdose");
+                        values.put(MedicationDatabaseSQLiteHandler.KEY_REMAINING_DOSAGE, effectiveTotalDosage);
+                        resolver.insert(MedicationContract.Consumption.CONTENT_URI, values);
+                        insertConsumptionRemoteDB((int) saved_Id, curTime, "Overdose", String.valueOf(effectiveTotalDosage));
                         new AlertDialog.Builder(this)
                                 .setTitle("Medication Already Taken")
                                 .setMessage("You have already taken your medication for today")
@@ -962,7 +1049,7 @@ public class MainActivity extends FragmentActivity
                                 .setMessage("Medication Consumption Completed\n" +
                                         "Medication Deleted from Inventory\n" +
                                         "Do you want to erase the NFC tag data?")
-                                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
                                     public void onClick(DialogInterface dialog, int which) {
                                         // continue with delete
                                         Intent intent = new Intent(MainActivity.this, WriteNfcTagActivity.class);
@@ -1025,6 +1112,16 @@ public class MainActivity extends FragmentActivity
         TotalDosage = "";
         ConsumptionTime = "";
         Administration = "";
+    }
+
+    public void updateConsumptionTime(String medId, String newConsumptionTime) {
+        ContentResolver resolver = getContentResolver();
+        Uri uri = MedicationContract.Medications.CONTENT_URI;
+        String selection = MedicationDatabaseSQLiteHandler.KEY_ID + " = " + medId;
+        ContentValues values = new ContentValues();
+        values.put(MedicationDatabaseSQLiteHandler.KEY_CONSUMPTION_TIME, newConsumptionTime);
+        resolver.update(uri, values, selection, null);
+        updateConsumptionTimeRemoteDB(Integer.parseInt(medId), newConsumptionTime);
     }
 
     public void displayToastForId(long idInDB) {
@@ -1129,6 +1226,26 @@ public class MainActivity extends FragmentActivity
     }
 
     /**
+     * Update consumption time on remote medication DB
+     * */
+    private void updateConsumptionTimeRemoteDB(int med_id, String newConsumptionTime) {
+        // Pass the settings flags by inserting them in a bundle
+        Bundle settingsBundle = new Bundle();
+        settingsBundle.putBoolean(
+                ContentResolver.SYNC_EXTRAS_MANUAL, true);
+        settingsBundle.putBoolean(
+                ContentResolver.SYNC_EXTRAS_EXPEDITED, true);
+        settingsBundle.putString("functions", "updateConsumptionTime");
+        settingsBundle.putInt("med_id", med_id);
+        settingsBundle.putString("newConsumptionTime", newConsumptionTime);
+        /*
+         * Request the sync for the default account, authority, and
+         * manual sync settings
+         */
+        ContentResolver.requestSync(mAccount, AUTHORITY, settingsBundle);
+    }
+
+    /**
      * Update dosage on remote medication DB
      * */
     private void updateDosageRemoteDB(int med_id, String effective_dosage) {
@@ -1171,9 +1288,31 @@ public class MainActivity extends FragmentActivity
         ContentResolver.requestSync(mAccount, AUTHORITY, settingsBundle);
     }
 
+    /**
+     * Insert consumption details on remote DB
+     * */
+    private void insertConsumptionRemoteDB(int med_id, String consumption_time, String is_taken, String remaining_dosage) {
+        // Pass the settings flags by inserting them in a bundle
+        Bundle settingsBundle = new Bundle();
+        settingsBundle.putBoolean(
+                ContentResolver.SYNC_EXTRAS_MANUAL, true);
+        settingsBundle.putBoolean(
+                ContentResolver.SYNC_EXTRAS_EXPEDITED, true);
+        settingsBundle.putString("functions", "insertConsumption");
+        settingsBundle.putInt("med_id", med_id);
+        settingsBundle.putString("consumption_time", consumption_time);
+        settingsBundle.putString("is_taken", is_taken);
+        settingsBundle.putString("remaining_dosage", remaining_dosage);
+        /*
+         * Request the sync for the default account, authority, and
+         * manual sync settings
+         */
+        ContentResolver.requestSync(mAccount, AUTHORITY, settingsBundle);
+    }
+
     private void populateListViewfromdb() {
         Inventory inventoryFragment;
-        List<MedicationObject> medList = new ArrayList<MedicationObject>();
+        medList = new ArrayList<MedicationObject>();
         Log.d("Test", "populateListViewfromdb entered");
         ContentResolver resolver = getContentResolver();
         String[] projection = MedicationDatabaseSQLiteHandler.ALL_MED_KEYS;
@@ -1222,10 +1361,10 @@ public class MainActivity extends FragmentActivity
         inventoryFragment = (Inventory) manager.findFragmentByTag("invFragment");
         if (inventoryFragment != null) {
             Log.d("debug", "fragment is not null");
-            MedicationListAdapter mAdapter = new MedicationListAdapter(this, medList);
+            mListAdapter = new MedicationListAdapter(this, medList, this);
 
 //            inventoryFragment.populateList(myCursorAdapter);
-            inventoryFragment.populateList(mAdapter);
+            inventoryFragment.populateList(mListAdapter);
         } else {
             Log.e("DEBUG", "fragment is NULL");
         }
