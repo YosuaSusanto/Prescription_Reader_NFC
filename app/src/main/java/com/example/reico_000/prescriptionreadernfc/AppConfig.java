@@ -30,6 +30,9 @@ public class AppConfig {
     public static String URL_POPULATE_DB = "http://pohhuanyu.com/android_login_api/populateDB.php";
 //
 //    // Server user updateDosage url
+    public static String URL_UPDATE_CONSUMPTION_TIME = "http://pohhuanyu.com/android_login_api/updateConsumptionTime.php";
+
+    //    // Server user updateDosage url
     public static String URL_UPDATE_DOSAGE = "http://pohhuanyu.com/android_login_api/updateDosage.php";
 //
 //    // Server user insertConsumption url

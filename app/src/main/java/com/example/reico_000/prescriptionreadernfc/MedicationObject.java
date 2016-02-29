@@ -74,6 +74,9 @@ public class MedicationObject {
         return this._administration;
     }
 
+    public void set_consumptionTime(String newConsumptionTime){
+        this._consumptionTime = newConsumptionTime;
+    }
     /**
      * Convenient method to get the objects data members in ContentValues object.
      * This will be useful for Content Provider operations,

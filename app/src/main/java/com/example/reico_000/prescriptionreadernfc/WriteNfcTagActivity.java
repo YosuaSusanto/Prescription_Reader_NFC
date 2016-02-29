@@ -40,6 +40,16 @@ public class WriteNfcTagActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        new AlertDialog.Builder(this)
+                .setTitle("Please Scan the tag to be deleted")
+                .setMessage("Please Scan the tag to be deleted")
+                .setNeutralButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        // continue with delete
+                    }
+                })
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .show();
 //        setContentView(R.layout.activity_write_nfc_tag);
 //        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
 //        setSupportActionBar(toolbar);
@@ -81,7 +91,17 @@ public class WriteNfcTagActivity extends Activity {
                 ndefTag.connect();
                 if (ndefTag.isWritable()) {
                     ndefTag.writeNdefMessage(new NdefMessage(new NdefRecord(NdefRecord.TNF_EMPTY, null, null, null)));
-                    Toast.makeText(this, "NFC Tag has been successfully encoded.", Toast.LENGTH_LONG).show();
+//                    Toast.makeText(this, "NFC Tag has been successfully encoded.", Toast.LENGTH_LONG).show();
+                    new AlertDialog.Builder(this)
+                            .setTitle("Erasing tag finished")
+                            .setMessage("Erasing tag data finished, you can now remove the tag")
+                            .setNeutralButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int which) {
+                                    // continue with delete
+                                }
+                            })
+                            .setIcon(android.R.drawable.ic_dialog_alert)
+                            .show();
                 } else {
                     Toast.makeText(this, "Tag is not writable", Toast.LENGTH_SHORT).show();
                 }
@@ -94,17 +114,21 @@ public class WriteNfcTagActivity extends Activity {
                     .setMessage("The data inside NFC tag has been cleared!")
                     .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int which) {
-                            // continue with delete
+                            finish();
+                        }
+                    })
+                    .setOnDismissListener(new DialogInterface.OnDismissListener() {
+                        @Override
+                        public void onDismiss(final DialogInterface arg0) {
+                            finish();
                         }
                     })
                     .setIcon(android.R.drawable.ic_dialog_alert)
                     .show();
-            finish();
-        }
-    }
+//                    finish();
 
-    //NFC
-    @Override
+        //NFC
+            @Override
     protected void onResume() {
         super.onResume();
         enableForeGroundDispatchSystem();

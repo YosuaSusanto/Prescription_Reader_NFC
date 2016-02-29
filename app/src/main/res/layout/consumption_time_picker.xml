@@ -22,15 +22,15 @@
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceLarge"
                 android:text="Large Text"
-                android:layout_marginLeft="10dp" />
+                android:layout_marginLeft="10dp"
+                android:layout_gravity="center" />
         </LinearLayout>
 
         <Button
             android:id="@+id/changeTimingButton"
-            android:layout_width="162sp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Change Consumption Time"
-            android:layout_weight="0.37"
+            android:text="Change Timing"
             android:textSize="20sp" />
 
     </LinearLayout>
