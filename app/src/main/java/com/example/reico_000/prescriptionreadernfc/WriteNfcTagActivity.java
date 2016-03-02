@@ -68,16 +68,17 @@ public class WriteNfcTagActivity extends Activity {
         //NFC
         nfcAdapter = NfcAdapter.getDefaultAdapter(this);
 
-        if(nfcAdapter != null && nfcAdapter.isEnabled()){
+        if (nfcAdapter != null && nfcAdapter.isEnabled()) {
             Toast.makeText(this, "NFC available!", Toast.LENGTH_LONG).show();
-        }else{
+        } else {
             Toast.makeText(this, "NFC unavailable! Please turn it on!", Toast.LENGTH_LONG).show();
         }
     }
+
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-        if(intent.hasExtra(NfcAdapter.EXTRA_TAG)){
+        if (intent.hasExtra(NfcAdapter.EXTRA_TAG)) {
             Toast.makeText(this, "NFC Tag Detected!", Toast.LENGTH_SHORT).show();
 
             Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
@@ -126,9 +127,11 @@ public class WriteNfcTagActivity extends Activity {
                     .setIcon(android.R.drawable.ic_dialog_alert)
                     .show();
 //                    finish();
+        }
+    }
 
-        //NFC
-            @Override
+    //NFC
+    @Override
     protected void onResume() {
         super.onResume();
         enableForeGroundDispatchSystem();

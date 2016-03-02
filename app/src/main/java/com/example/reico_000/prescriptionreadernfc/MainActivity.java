@@ -705,7 +705,7 @@ public class MainActivity extends FragmentActivity
 //        medList.remove((MedicationObject) al.get(0));
 //        medList.add((MedicationObject) al.get(1));
 //        mListAdapter.notifyDataSetChanged();
-        updateConsumptionTime(String.valueOf(((MedicationObject) al.get(1)).get_id()), ((MedicationObject) al.get(1)).get_consumptionTime());
+        updateMedConsumptionTime(String.valueOf(((MedicationObject) al.get(1)).get_id()), ((MedicationObject) al.get(1)).get_consumptionTime());
     }
     ////////// FOR DEBUGGING PURPOSE ///////////
     private void scanItemOne() {
@@ -1114,14 +1114,51 @@ public class MainActivity extends FragmentActivity
         Administration = "";
     }
 
-    public void updateConsumptionTime(String medId, String newConsumptionTime) {
+    public void updateMedConsumptionTime(String medId, String newConsumptionTime) {
+        String oldConsumptionTime = "";
         ContentResolver resolver = getContentResolver();
         Uri uri = MedicationContract.Medications.CONTENT_URI;
-        String selection = MedicationDatabaseSQLiteHandler.KEY_ID + " = " + medId;
+        String[] projection = MedicationDatabaseSQLiteHandler.ALL_MED_KEYS;
+        String selection = MedicationDatabaseSQLiteHandler.KEY_ID + " = ?";
+        String[] selectionArgs = new String[]{medId};
+
+        Cursor cursor =
+                resolver.query(uri,
+                        projection,
+                        selection,
+                        selectionArgs,
+                        null);
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                 oldConsumptionTime = cursor.getString(cursor.getColumnIndex("ConsumptionTime"));
+            }
+        }
+        cursor.close();
+
         ContentValues values = new ContentValues();
+        selection = MedicationDatabaseSQLiteHandler.KEY_ID + " = " + medId;
         values.put(MedicationDatabaseSQLiteHandler.KEY_CONSUMPTION_TIME, newConsumptionTime);
         resolver.update(uri, values, selection, null);
-        updateConsumptionTimeRemoteDB(Integer.parseInt(medId), newConsumptionTime);
+        updateMedConsumptionTimeRemoteDB(Integer.parseInt(medId), newConsumptionTime);
+
+        String[] newConsTimeArr = newConsumptionTime.split(", "), oldConsTimeArr = oldConsumptionTime.split(", ");
+        for (int i = 0; i < newConsTimeArr.length; i++) {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US);
+            String timeStamp = dateFormat.format(new Date()); // Find todays date
+            oldConsumptionTime = timeStamp + " " + oldConsTimeArr[i] + ":00";
+            newConsumptionTime = timeStamp + " " + newConsTimeArr[i] + ":00";
+            selection = MedicationDatabaseSQLiteHandler.KEY_MEDICATION_ID + " = " + medId + " AND "
+                    + MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT + " = '" + oldConsumptionTime + "'";
+//            + "' AND "
+//                    + MedicationDatabaseSQLiteHandler.KEY_IS_TAKEN + " = No";
+
+            uri = MedicationContract.Consumption.CONTENT_URI;
+            values = new ContentValues();
+            values.put(MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT, newConsumptionTime);
+            resolver.update(uri, values, selection, null);
+            updateUntakenConsumptionTimeRemoteDB(Integer.parseInt(medId), oldConsumptionTime,
+                    newConsumptionTime);
+        }
     }
 
     public void displayToastForId(long idInDB) {
@@ -1228,15 +1265,37 @@ public class MainActivity extends FragmentActivity
     /**
      * Update consumption time on remote medication DB
      * */
-    private void updateConsumptionTimeRemoteDB(int med_id, String newConsumptionTime) {
+    private void updateMedConsumptionTimeRemoteDB(int med_id, String newConsumptionTime) {
         // Pass the settings flags by inserting them in a bundle
         Bundle settingsBundle = new Bundle();
         settingsBundle.putBoolean(
                 ContentResolver.SYNC_EXTRAS_MANUAL, true);
         settingsBundle.putBoolean(
                 ContentResolver.SYNC_EXTRAS_EXPEDITED, true);
-        settingsBundle.putString("functions", "updateConsumptionTime");
+        settingsBundle.putString("functions", "updateMedConsumptionTime");
         settingsBundle.putInt("med_id", med_id);
+        settingsBundle.putString("newConsumptionTime", newConsumptionTime);
+        /*
+         * Request the sync for the default account, authority, and
+         * manual sync settings
+         */
+        ContentResolver.requestSync(mAccount, AUTHORITY, settingsBundle);
+    }
+
+    /**
+     * Update the a on remote medication DB
+     * */
+    private void updateUntakenConsumptionTimeRemoteDB(int med_id, String oldConsumptionTime,
+                                                      String newConsumptionTime) {
+        // Pass the settings flags by inserting them in a bundle
+        Bundle settingsBundle = new Bundle();
+        settingsBundle.putBoolean(
+                ContentResolver.SYNC_EXTRAS_MANUAL, true);
+        settingsBundle.putBoolean(
+                ContentResolver.SYNC_EXTRAS_EXPEDITED, true);
+        settingsBundle.putString("functions", "updateUntakenConsumptionTime");
+        settingsBundle.putInt("med_id", med_id);
+        settingsBundle.putString("oldConsumptionTime", oldConsumptionTime);
         settingsBundle.putString("newConsumptionTime", newConsumptionTime);
         /*
          * Request the sync for the default account, authority, and

@@ -103,10 +103,15 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
             int med_id = extras.getInt("med_id");
             String effective_dosage = extras.getString("effective_dosage");
             updateDosageRemoteDB(med_id, effective_dosage);
-        } else if (functions.equals("updateConsumptionTime")) {
+        } else if (functions.equals("updateMedConsumptionTime")) {
             int med_id = extras.getInt("med_id");
             String newConsumptionTime = extras.getString("newConsumptionTime");
-            updateConsumptionTimeRemoteDB(med_id, newConsumptionTime);
+            updateMedConsumptionTimeRemoteDB(med_id, newConsumptionTime);
+        } else if (functions.equals("updateUntakenConsumptionTime")) {
+            int med_id = extras.getInt("med_id");
+            String oldConsumptionTime = extras.getString("oldConsumptionTime");
+            String newConsumptionTime = extras.getString("newConsumptionTime");
+            updateUntakenConsumptionTimeRemoteDB(med_id, oldConsumptionTime, newConsumptionTime);
         }
     }
 
@@ -188,7 +193,6 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
             @Override
             protected Map<String, String> getParams() {
-                // Posting parameters to login url
                 Map<String, String> params = new HashMap<String, String>();
                 params.put("patient_id", patientID);
 
@@ -201,14 +205,14 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
     }
 
     /**
-     * Update dosage on remote medication DB
+     * Update consumption time on remote medication DB
      * */
-    private void updateConsumptionTimeRemoteDB(final int med_id, final String newConsumptionTime) {
+    private void updateMedConsumptionTimeRemoteDB(final int med_id, final String newConsumptionTime) {
         StringRequest req = new StringRequest(Request.Method.POST, AppConfig.URL_UPDATE_CONSUMPTION_TIME,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        Log.d("updateConsumptionTime", response);
+                        Log.d("updateMedConsTime", response);
 
                         try {
                             JSONObject jObj = new JSONObject(response);
@@ -252,9 +256,74 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
             @Override
             protected Map<String, String> getParams() {
-                // Posting parameters to login url
                 Map<String, String> params = new HashMap<String, String>();
                 params.put("med_id", String.valueOf(med_id));
+                params.put("newConsumptionTime", newConsumptionTime);
+
+                return params;
+            }
+        };
+
+        // Adding request to request queue
+        VolleyController.getInstance(mContext).addToRequestQueue(req);
+    }
+
+    /**
+     * Update untaken consumption time on remote medication DB
+     * */
+    private void updateUntakenConsumptionTimeRemoteDB(final int med_id, final String oldConsumptionTime,
+                                                      final String newConsumptionTime) {
+        StringRequest req = new StringRequest(Request.Method.POST, AppConfig.URL_UPDATE_UNTAKEN_CONSUMPTION_TIME,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        Log.d("updateUntakenConsTime", response);
+
+                        try {
+                            JSONObject jObj = new JSONObject(response);
+                            boolean error = jObj.getBoolean("error");
+
+                            // Check for error node in json
+                            if (!error) {
+                                String operation = jObj.getString("operation");
+                                String row_nums = jObj.getString("row_nums");
+                                String dispMessage = operation;
+                                if (operation.equals("update")) {
+                                    dispMessage = "Updated " + row_nums + "row(s)";
+                                } else if (operation.equals("delete")) {
+                                    dispMessage = "Deleted " + row_nums + "row(s)";
+                                }
+                                Toast.makeText(mContext,
+                                        dispMessage, Toast.LENGTH_LONG).show();
+                            } else {
+                                // Error in login. Get the error message
+                                String errorMsg = jObj.getString("error_msg");
+                                Toast.makeText(mContext,
+                                        errorMsg, Toast.LENGTH_LONG).show();
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                            Toast.makeText(mContext,
+                                    "Error: " + e.getMessage(),
+                                    Toast.LENGTH_LONG).show();
+                        }
+//                        pDialog.hide();
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+//                VolleyLog.d(TAG, "Error: " + error.getMessage());
+                Toast.makeText(mContext,
+                        error.getMessage(), Toast.LENGTH_SHORT).show();
+//                pDialog.hide();
+            }
+        }) {
+
+            @Override
+            protected Map<String, String> getParams() {
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("med_id", String.valueOf(med_id));
+                params.put("oldConsumptionTime", oldConsumptionTime);
                 params.put("newConsumptionTime", newConsumptionTime);
 
                 return params;
@@ -317,7 +386,6 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
             @Override
             protected Map<String, String> getParams() {
-                // Posting parameters to login url
                 Map<String, String> params = new HashMap<String, String>();
                 params.put("med_id", String.valueOf(med_id));
                 params.put("effective_dosage", effective_dosage);
@@ -372,8 +440,6 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
             @Override
             protected Map<String, String> getParams() {
-                // Posting parameters to login url
-
                 Map<String, String> params = new HashMap<String, String>();
                 params.put("med_id", String.valueOf(med_id));
                 params.put("consumption_time", consumption_time);
@@ -432,7 +498,6 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
             @Override
             protected Map<String, String> getParams() {
-                // Posting parameters to login url
                 Map<String, String> params = new HashMap<String, String>();
                 params.put("med_id", String.valueOf(med_id));
                 params.put("consumption_time", consumption_time);

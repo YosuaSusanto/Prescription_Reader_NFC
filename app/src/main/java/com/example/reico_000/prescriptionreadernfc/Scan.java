@@ -37,6 +37,7 @@ public class Scan extends Fragment implements View.OnClickListener {
     private TextView dosageFormTextView;
     private TextView perDosageTextView;
     private TextView totalDosageTextView;
+    private TextView consumptionTimeTextView;
 
     private ImageView scan_Morning;
     private ImageView scan_Afternoon;
@@ -95,14 +96,10 @@ public class Scan extends Fragment implements View.OnClickListener {
         dosageFormTextView = (TextView) view.findViewById(R.id.scan_DosageForm);
         perDosageTextView = (TextView) view.findViewById(R.id.scan_PerDosage);
         totalDosageTextView = (TextView) view.findViewById(R.id.scan_TotalDosage);
+        consumptionTimeTextView = (TextView) view.findViewById(R.id.scan_ConsumptionTime);
 
         consumeButton = (Button) view.findViewById(R.id.consumebutton);
         resetButton = (Button) view.findViewById(R.id.resetbutton);
-
-        scan_Morning = (ImageView) view.findViewById(R.id.scan_morning);
-        scan_Afternoon = (ImageView) view.findViewById(R.id.scan_afternoon);
-        scan_Evening = (ImageView) view.findViewById(R.id.scan_evening);
-        scan_Before_Sleep = (ImageView) view.findViewById(R.id.scan_before_sleep);
 
         consumeButton.setOnClickListener(this);
         resetButton.setOnClickListener(this);
@@ -174,31 +171,7 @@ public class Scan extends Fragment implements View.OnClickListener {
         dosageFormTextView.setText(dosageForm);
         perDosageTextView.setText(perDosage);
         totalDosageTextView.setText(totalDosage);
-
-        if (consumptionTime.indexOf('M') > -1){
-            scan_Morning.setVisibility(View.VISIBLE);
-        } else {
-            scan_Morning.setVisibility(View.INVISIBLE);
-        }
-
-        if (consumptionTime.indexOf('A') > -1){
-            scan_Afternoon.setVisibility(View.VISIBLE);
-        } else {
-            scan_Afternoon.setVisibility(View.INVISIBLE);
-        }
-
-        if (consumptionTime.indexOf('E') > -1){
-            scan_Evening.setVisibility(View.VISIBLE);
-        } else {
-            scan_Evening.setVisibility(View.INVISIBLE);
-        }
-
-        if (consumptionTime.indexOf('B') > -1){
-            scan_Before_Sleep.setVisibility(View.VISIBLE);
-        } else {
-            scan_Before_Sleep.setVisibility(View.INVISIBLE);
-        }
-
+        consumptionTimeTextView.setText(consumptionTime);
     }
 
     public void ClearTextViews() {
@@ -207,6 +180,7 @@ public class Scan extends Fragment implements View.OnClickListener {
         dosageFormTextView.setText("");
         perDosageTextView.setText("");
         totalDosageTextView.setText("");
+        consumptionTimeTextView.setText("");
         scan_Morning.setVisibility(View.INVISIBLE);
         scan_Afternoon.setVisibility(View.INVISIBLE);
         scan_Evening.setVisibility(View.INVISIBLE);

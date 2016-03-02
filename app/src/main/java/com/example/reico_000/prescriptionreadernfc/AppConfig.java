@@ -15,30 +15,24 @@ public class AppConfig {
     public static String URL_REGISTER = NGROK_URL + "register.php";
 
     // Server user populateDB url
-//    public static String URL_POPULATE_DB = NGROK_URL + "populateDB.php";
+    public static String URL_POPULATE_DB = "http://pohhuanyu.com/android_login_api/populateDB.php";
+
+    // Server user populateDB url
+    public static String URL_BLOCK_MEDICINE = "http://pohhuanyu.com/android_login_api/blockMedicine.php";
 
     // Server user updateDosage url
-//    public static String URL_UPDATE_DOSAGE = NGROK_URL + "updateDosage.php";
-
-    // Server user insertConsumption url
-//    public static String URL_INSERT_CONSUMPTION = NGROK_URL + "insertConsumption.php";
-
-    // Server user updateConsumption url
-//    public static String URL_UPDATE_CONSUMPTION = NGROK_URL + "updateConsumption.php";
-//
-//    // Server user populateDB url
-    public static String URL_POPULATE_DB = "http://pohhuanyu.com/android_login_api/populateDB.php";
-//
-//    // Server user updateDosage url
     public static String URL_UPDATE_CONSUMPTION_TIME = "http://pohhuanyu.com/android_login_api/updateConsumptionTime.php";
 
-    //    // Server user updateDosage url
+    // Server user updateDosage url
+    public static String URL_UPDATE_UNTAKEN_CONSUMPTION_TIME = "http://pohhuanyu.com/android_login_api/updateUntakenConsumptionTime.php";
+
+    // Server user updateDosage url
     public static String URL_UPDATE_DOSAGE = "http://pohhuanyu.com/android_login_api/updateDosage.php";
-//
-//    // Server user insertConsumption url
+
+    // Server user insertConsumption url
     public static String URL_INSERT_CONSUMPTION = "http://pohhuanyu.com/android_login_api/insertConsumption.php";
-//
-//    // Server user updateConsumption url
+
+    // Server user updateConsumption url
     public static String URL_UPDATE_CONSUMPTION = "http://pohhuanyu.com/android_login_api/updateConsumption.php";
 
 }

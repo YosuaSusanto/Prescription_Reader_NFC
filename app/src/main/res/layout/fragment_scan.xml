@@ -126,9 +126,6 @@
         android:textAppearance="?android:attr/textAppearanceLarge"
         android:id="@+id/scan_TotalDosage"
         android:layout_marginTop="225dp"
-        android:layout_below="@+id/scan_Brand_Name"
-        android:layout_alignLeft="@+id/scan_Brand_Name"
-        android:layout_alignStart="@+id/scan_Brand_Name"
         android:layout_gravity="left|top"
         android:layout_marginLeft="5dp"
         android:textColor="#ff001b9d"
@@ -146,45 +143,16 @@
         android:textSize="20dp"
         android:layout_marginLeft="5dp" />
 
-    <ImageView
-        android:layout_width="84dp"
-        android:layout_height="84dp"
-        android:id="@+id/scan_morning"
-        android:layout_gravity="left|top"
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:id="@+id/scan_ConsumptionTime"
         android:layout_marginTop="275dp"
-        android:visibility="invisible"
-        android:src="@drawable/morning"
-        android:layout_marginLeft="5dp" />
-
-    <ImageView
-        android:layout_width="84dp"
-        android:layout_height="84dp"
-        android:id="@+id/scan_afternoon"
         android:layout_gravity="left|top"
-        android:layout_marginTop="275dp"
-        android:layout_marginLeft="95dp"
-        android:visibility="invisible"
-        android:src="@drawable/lunch" />
-
-    <ImageView
-        android:layout_width="84dp"
-        android:layout_height="84dp"
-        android:id="@+id/scan_evening"
-        android:layout_gravity="left|top"
-        android:layout_marginLeft="185dp"
-        android:layout_marginTop="275dp"
-        android:visibility="invisible"
-        android:src="@drawable/dinner" />
-
-    <ImageView
-        android:layout_width="84dp"
-        android:layout_height="84dp"
-        android:id="@+id/scan_before_sleep"
-        android:layout_gravity="left|top"
-        android:layout_marginTop="275dp"
-        android:layout_marginLeft="275dp"
-        android:visibility="invisible"
-        android:src="@drawable/bedtime" />
+        android:layout_marginLeft="5dp"
+        android:textColor="#ff001b9d"
+        android:textSize="20dp" />
 
     <Button
         android:layout_width="wrap_content"

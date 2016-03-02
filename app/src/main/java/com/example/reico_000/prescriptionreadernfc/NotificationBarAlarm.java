@@ -99,7 +99,9 @@ public class NotificationBarAlarm extends BroadcastReceiver {
                     }
                 }
                 if (lateMedicineList.size() > 0) {
-                    textToShow += "\n\n You have almost reached the next consumption time for these following medicaitons:";
+                    textToShow += "\n\n For these following medications, you have missed the dose of " +
+                            "your previous medication. If you are near the next dose of your " +
+                            "medication, skip the previous dose and consume your next dose instead";
                     for (int i = 0; i < lateMedicineList.size(); i++) {
                         textToShow += "\n- " + lateMedicineList.get(i);
                     }
