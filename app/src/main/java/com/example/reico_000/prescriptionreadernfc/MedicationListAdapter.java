@@ -1,8 +1,22 @@
 package com.example.reico_000.prescriptionreadernfc;
 
+import android.accounts.Account;
+import android.app.AlertDialog;
 import android.app.Dialog;
+import android.app.DownloadManager;
+import android.content.ActivityNotFoundException;
+import android.content.BroadcastReceiver;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Environment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -15,11 +29,24 @@ import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import helper.DataTransferInterface;
+import helper.VolleyCallback;
 
 /**
  * Created by Yosua Susanto on 2/2/2016.
@@ -27,16 +54,24 @@ import helper.DataTransferInterface;
 public class MedicationListAdapter extends BaseAdapter implements DataTransferInterface {
     private ArrayList<MedicationObject> mainList;
     private Context context;
+    private Account account;
     private ArrayList<String> checkedTimeList;
     private String[] consumptionTimeArr;
     private MedicationObject medObject;
     private ConsumptionTimeListAdapter consumptionTimeAdapter;
+    private String filePath;
     DataTransferInterface dtInterface;
 
-    public MedicationListAdapter(Context applicationContext,
+    private static final String siteName = "http://www.onco-informatics.com/medadherence/";
+
+    //Dialog in other avtivity
+    private AlertDialog stopMedicationDialog = null;
+
+    public MedicationListAdapter(Context applicationContext, Account account,
                                  List<MedicationObject> medList, DataTransferInterface dtInterface) {
 
         super();
+        this.account = account;
         this.context = applicationContext;
         this.dtInterface = dtInterface;
         this.mainList = new ArrayList<MedicationObject>(medList);
@@ -120,81 +155,169 @@ public class MedicationListAdapter extends BaseAdapter implements DataTransferIn
                 imageClick.setOnClickListener(new OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        switch (v.getId()) {
-                            case R.id.action_row_overflow:
-                                PopupMenu popup = new PopupMenu(context, v);
-                                popup.getMenuInflater().inflate(R.menu.popup_menu,
-                                        popup.getMenu());
-                                popup.show();
-                                popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-                                    @Override
-                                    public boolean onMenuItemClick(MenuItem item) {
+                    switch (v.getId()) {
+                        case R.id.action_row_overflow:
+                            PopupMenu popup = new PopupMenu(context, v);
+                            popup.getMenuInflater().inflate(R.menu.popup_menu,
+                                    popup.getMenu());
+                            popup.show();
+                            popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                                @Override
+                                public boolean onMenuItemClick(MenuItem item) {
 
-                                        switch (item.getItemId()) {
-                                            case R.id.item_changeReminderTiming:
-                                                //Or Some other code you want to put here.. This is just an example.
-                                                Toast.makeText(context, " Change reminder timing Clicked at position " + " : " + position, Toast.LENGTH_LONG).show();
-                                                final Dialog dialog = new Dialog(context);
-                                                dialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                                                    @Override
-                                                    public void onDismiss(final DialogInterface arg0) {
-                                                        // do something
+                                    switch (item.getItemId()) {
+                                        case R.id.item_changeReminderTiming:
+                                            //Or Some other code you want to put here.. This is just an example.
+                                            Toast.makeText(context, " Change reminder timing Clicked at position " + " : " + position, Toast.LENGTH_LONG).show();
+                                            final Dialog dialog = new Dialog(context);
+                                            dialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                                                @Override
+                                                public void onDismiss(final DialogInterface arg0) {
+                                                    // do something
 //                                                        mainList.remove(medicationObject);
-                                                        medObject = (MedicationObject) getItem(position);
+                                                    medObject = (MedicationObject) getItem(position);
 
-                                                        MedicationObject medicationObject2 = new MedicationObject(medObject.get_id(), medObject.get_brandName(),
-                                                                medObject.get_genericName(), medObject.get_dosageForm(), medObject.get_perDosage(),
-                                                                medObject.get_totalDosage(), medObject.get_consumptionTime(), medObject.get_patientID(),
-                                                                medObject.get_administration());
-                                                        String sortedTimeString = getSortedTimeString(checkedTimeList);
-                                                        medicationObject2.set_consumptionTime(sortedTimeString);
-                                                        ArrayList<MedicationObject> tempList = new ArrayList<MedicationObject>
-                                                                (Arrays.asList(medObject, medicationObject2));
-                                                        dtInterface.setValues(tempList);
+                                                    MedicationObject medicationObject2 = new MedicationObject(medObject.get_id(), medObject.get_brandName(),
+                                                            medObject.get_genericName(), medObject.get_dosageForm(), medObject.get_perDosage(),
+                                                            medObject.get_totalDosage(), medObject.get_consumptionTime(), medObject.get_patientID(),
+                                                            medObject.get_administration(), medObject.get_remarks());
+                                                    String sortedTimeString = getSortedTimeString(checkedTimeList);
+                                                    medicationObject2.set_consumptionTime(sortedTimeString);
+                                                    ArrayList<MedicationObject> tempList = new ArrayList<MedicationObject>
+                                                            (Arrays.asList(medObject, medicationObject2));
+                                                    dtInterface.setValues(tempList);
 //                                                        mainList.add(medicationObject);
-                                                    }
-                                                });
-                                                LayoutInflater inflater = (LayoutInflater) context
-                                                        .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                                                View view = inflater.inflate(R.layout.dialog_list, null);
+                                                }
+                                            });
+                                            LayoutInflater inflater = (LayoutInflater) context
+                                                    .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                                            View view = inflater.inflate(R.layout.dialog_list, null);
 
-                                                ListView lv = (ListView) view.findViewById(R.id.custom_list);
+                                            ListView lv = (ListView) view.findViewById(R.id.custom_list);
 
-                                                // Change MyActivity.this and myListOfItems to your own values
-                                                medObject = (MedicationObject) getItem(position);
-                                                consumptionTimeArr = medObject.get_consumptionTime().split(", ");
-                                                checkedTimeList = new ArrayList<String>(Arrays.asList(consumptionTimeArr));
-                                                consumptionTimeAdapter = new ConsumptionTimeListAdapter(context,
-                                                        checkedTimeList, MedicationListAdapter.this);
+                                            // Change MyActivity.this and myListOfItems to your own values
+                                            medObject = (MedicationObject) getItem(position);
+                                            consumptionTimeArr = medObject.get_consumptionTime().split(", ");
+                                            checkedTimeList = new ArrayList<String>(Arrays.asList(consumptionTimeArr));
+                                            consumptionTimeAdapter = new ConsumptionTimeListAdapter(context,
+                                                    checkedTimeList, MedicationListAdapter.this);
 
-                                                lv.setAdapter(consumptionTimeAdapter);
+                                            lv.setAdapter(consumptionTimeAdapter);
 
 //                                                lv.setOnItemClickListener(........);
 
-                                                dialog.setContentView(view);
+                                            dialog.setContentView(view);
 
-                                                dialog.show();
+                                            dialog.show();
 
-                                                break;
-                                            default:
-                                                break;
-                                        }
-                                        return true;
+                                            break;
+                                        case R.id.item_stopTakingMedicine:
+                                            medObject = (MedicationObject) getItem(position);
+                                            new AlertDialog.Builder(context)
+                                                    .setTitle("Stop Taking Medication")
+                                                    .setMessage("Are you sure you want to stop taking " +
+                                                            medObject.get_brandName() + "?" +
+                                                            "\nPlease consult your physician before doing so.")
+                                                    .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                                                        public void onClick(DialogInterface dialog, int which) {
+                                                            ContentResolver resolver1 = context.getContentResolver();
+                                                            Uri uri = MedicationContract.Medications.CONTENT_URI;
+                                                            ContentValues values = new ContentValues();
+                                                            values.put(MedicationDatabaseSQLiteHandler.KEY_REMARKS,
+                                                                    "Patient has stopped taking this medication.");
+                                                            String selection = MedicationDatabaseSQLiteHandler.KEY_ID + " = ?";
+                                                            String[] args = new String[]{String.valueOf(medObject.get_id())};
+//                                                            resolver1.update(uri, values, selection, args);
+                                                            resolver1.delete(uri, selection, args);
+                                                            blockMedicationRemoteDB(medObject.get_id());
+//                                                                Toast.makeText(context, info_BrandName + " has been deleted.", Toast.LENGTH_LONG).show();
+                                                        }
+                                                    })
+                                                    .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
+                                                        public void onClick(DialogInterface dialog, int which) {
+                                                        }
+                                                    })
+                                                    .setIcon(android.R.drawable.ic_dialog_alert)
+                                                    .show();
+                                            break;
+                                        case R.id.item_showMoreInfo:
+                                            medObject = (MedicationObject) getItem(position);
+                                            getPDFFilePath(String.valueOf(medObject.get_brandName()), new VolleyCallback() {
+                                                @Override
+                                                public void onSuccess(String result) {
+                                                    filePath = result;
+                                                    File file = new File(context.getExternalFilesDir(null).getAbsolutePath() +
+                                                            "/" + medObject.get_brandName() + ".pdf");
+                                                    if (file.exists()) {
+                                                        // Open the pdf file
+                                                        openPDFFile(file);
+                                                    } else {
+                                                        // Download, then open
+                                                        String downloadURL = siteName + filePath;
+                                                        downloadURL = downloadURL.replaceAll(" ", "%20");
+//                                                        String fileName = filePath.substring(4);
+                                                        String fileName = medObject.get_brandName() + ".pdf";
+                                                        DownloadManager.Request request = new
+                                                                DownloadManager.Request(Uri.parse(downloadURL));
+                                                        request.setDescription("Downloading medication informationi file...");
+                                                        request.setTitle("Downloading Medication Information");
+                                                        // in order for this if to run, you must use the android 3.2 to compile your app
+                                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+                                                            request.allowScanningByMediaScanner();
+                                                            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                                                        }
+
+                                                        request.setDestinationInExternalFilesDir(context, null, fileName);
+
+// get download service and enqueue file
+                                                        DownloadManager manager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
+                                                        manager.enqueue(request);
+
+                                                        BroadcastReceiver onComplete=new BroadcastReceiver() {
+                                                            public void onReceive(Context ctxt, Intent intent) {
+                                                                // your code
+                                                                openPDFFile(new File(context.getExternalFilesDir(null).getAbsolutePath() +
+                                                                        "/" + medObject.get_brandName() + ".pdf"));
+                                                            }
+                                                        };
+
+                                                        context.registerReceiver(onComplete, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+
+                                                    }
+                                                }
+                                            });
+                                           break;
+                                        default:
+                                            break;
                                     }
-                                });
-                                break;
-                            default:
-                                break;
-                        }
+                                    return true;
+                                }
+                            });
+                            break;
+                        default:
+                            break;
+                    }
                     }
                 });
             } catch (Exception e) {
-
                 e.printStackTrace();
             }
 
         }
         return convertView;
+    }
+
+    private void openPDFFile(File file) {
+        Intent target = new Intent(Intent.ACTION_VIEW);
+        target.setDataAndType(Uri.fromFile(file), "application/pdf");
+        target.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+
+//        Intent intent = Intent.createChooser(target, "Open File");
+        try {
+            context.startActivity(target);
+        } catch (ActivityNotFoundException e) {
+            // Instruct the user to install a PDF reader here, or something
+        }
     }
 
     private String getSortedTimeString (List<String> timeList) {
@@ -234,6 +357,75 @@ public class MedicationListAdapter extends BaseAdapter implements DataTransferIn
         } else {
             return 0;
         }
+    }
+
+    /**
+     * Update consumption details on remote medication DB
+     * */
+    private void blockMedicationRemoteDB(final int med_id) {
+        // Pass the settings flags by inserting them in a bundle
+        Bundle settingsBundle = new Bundle();
+        settingsBundle.putBoolean(
+                ContentResolver.SYNC_EXTRAS_MANUAL, true);
+        settingsBundle.putBoolean(
+                ContentResolver.SYNC_EXTRAS_EXPEDITED, true);
+        settingsBundle.putString("functions", "blockMedication");
+        settingsBundle.putInt("med_id", med_id);
+        /*
+         * Request the sync for the default account, authority, and
+         * manual sync settings
+         */
+        ContentResolver.requestSync(account, MedicationContract.AUTHORITY, settingsBundle);
+    }
+
+    /**
+     * Get PDF file path
+     * */
+    private void getPDFFilePath(final String brand_name, final VolleyCallback callback) {
+        StringRequest req = new StringRequest(Request.Method.POST, AppConfig.URL_GET_PDF_FILE_PATH,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        Log.d("getPDFFilePath", response);
+
+                        try {
+                            // Parsing json array response
+                            // loop through each json object
+                            JSONArray jArr = new JSONArray(response);
+                            JSONObject medication = (JSONObject) jArr.get(0);
+
+                            String filePath = medication.getString("pdf_file_path");
+                            callback.onSuccess(filePath);
+//                            return filePath;
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                            Toast.makeText(context,
+                                    "Error in downloading file (JSONException): " + e.getMessage(),
+                                    Toast.LENGTH_LONG).show();
+                        }
+//                        pDialog.hide();
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+//                VolleyLog.d(TAG, "Error: " + error.getMessage());
+                Toast.makeText(context, "Error in downloading file (VolleyError): " +
+                        error.getMessage(), Toast.LENGTH_SHORT).show();
+//                pDialog.hide();
+            }
+        }) {
+
+            @Override
+            protected Map<String, String> getParams() {
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("brand_name", brand_name);
+
+                return params;
+            }
+        };
+
+        // Adding request to request queue
+        VolleyController.getInstance(context).addToRequestQueue(req);
     }
 
     @Override

@@ -18,7 +18,10 @@ public class AppConfig {
     public static String URL_POPULATE_DB = "http://pohhuanyu.com/android_login_api/populateDB.php";
 
     // Server user populateDB url
-    public static String URL_BLOCK_MEDICINE = "http://pohhuanyu.com/android_login_api/blockMedicine.php";
+    public static String URL_GET_PDF_FILE_PATH = "http://pohhuanyu.com/android_login_api/getPDFFilePath.php";
+
+    // Server user populateDB url
+    public static String URL_BLOCK_MEDICATION = "http://pohhuanyu.com/android_login_api/blockMedication.php";
 
     // Server user updateDosage url
     public static String URL_UPDATE_CONSUMPTION_TIME = "http://pohhuanyu.com/android_login_api/updateConsumptionTime.php";

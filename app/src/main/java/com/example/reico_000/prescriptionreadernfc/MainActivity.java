@@ -36,6 +36,7 @@ import android.view.ViewGroup;
 import android.support.v4.widget.DrawerLayout;
 import android.widget.TextView;
 
+import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.sql.Connection;
 import java.text.ParsePosition;
@@ -43,8 +44,10 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;
@@ -53,6 +56,14 @@ import android.nfc.Tag;
 import android.nfc.tech.Ndef;
 import android.os.AsyncTask;
 import android.widget.Toast;
+
+import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import helper.DataTransferInterface;
 import helper.SessionManager;
@@ -218,6 +229,11 @@ public class MainActivity extends FragmentActivity
             }
         }
 
+        File directory = getExternalFilesDir(null);
+        if(!directory.exists()) {
+            directory.mkdirs();
+        }
+
 //        //Text to Speech
 //        textToSpeechObject = new TextToSpeech(MainActivity.this, new TextToSpeech.OnInitListener() {
 //            @Override
@@ -267,6 +283,7 @@ public class MainActivity extends FragmentActivity
             manager.beginTransaction()
                     .replace(R.id.container, new Scan(), "scanFragment")
                     .commit();
+            mNavigationDrawerFragment.selectItem(0);
         }
     }
     /**
@@ -1148,9 +1165,8 @@ public class MainActivity extends FragmentActivity
             oldConsumptionTime = timeStamp + " " + oldConsTimeArr[i] + ":00";
             newConsumptionTime = timeStamp + " " + newConsTimeArr[i] + ":00";
             selection = MedicationDatabaseSQLiteHandler.KEY_MEDICATION_ID + " = " + medId + " AND "
-                    + MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT + " = '" + oldConsumptionTime + "'";
-//            + "' AND "
-//                    + MedicationDatabaseSQLiteHandler.KEY_IS_TAKEN + " = No";
+                    + MedicationDatabaseSQLiteHandler.KEY_CONSUMED_AT + " = '" + oldConsumptionTime
+                    + "' AND " + MedicationDatabaseSQLiteHandler.KEY_IS_TAKEN + " = 'No'";
 
             uri = MedicationContract.Consumption.CONTENT_URI;
             values = new ContentValues();
@@ -1263,7 +1279,7 @@ public class MainActivity extends FragmentActivity
     }
 
     /**
-     * Update consumption time on remote medication DB
+     * Update the medication's consumption time on remote medication DB
      * */
     private void updateMedConsumptionTimeRemoteDB(int med_id, String newConsumptionTime) {
         // Pass the settings flags by inserting them in a bundle
@@ -1283,7 +1299,8 @@ public class MainActivity extends FragmentActivity
     }
 
     /**
-     * Update the a on remote medication DB
+     * Update the untaken consumption on remote medication DB, after the user change
+     * a medicine's consumption time.
      * */
     private void updateUntakenConsumptionTimeRemoteDB(int med_id, String oldConsumptionTime,
                                                       String newConsumptionTime) {
@@ -1420,7 +1437,7 @@ public class MainActivity extends FragmentActivity
         inventoryFragment = (Inventory) manager.findFragmentByTag("invFragment");
         if (inventoryFragment != null) {
             Log.d("debug", "fragment is not null");
-            mListAdapter = new MedicationListAdapter(this, medList, this);
+            mListAdapter = new MedicationListAdapter(this, mAccount, medList, this);
 
 //            inventoryFragment.populateList(myCursorAdapter);
             inventoryFragment.populateList(mListAdapter);

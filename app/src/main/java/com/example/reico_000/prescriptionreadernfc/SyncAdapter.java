@@ -112,6 +112,9 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
             String oldConsumptionTime = extras.getString("oldConsumptionTime");
             String newConsumptionTime = extras.getString("newConsumptionTime");
             updateUntakenConsumptionTimeRemoteDB(med_id, oldConsumptionTime, newConsumptionTime);
+        } else if (functions.equals("blockMedication")) {
+            int med_id = extras.getInt("med_id");
+            blockMedicationRemoteDB(med_id);
         }
     }
 
@@ -151,6 +154,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
                                 String consumption_time = medication.getString("consumption_time");
                                 String patient_id = medication.getString("patient_id");
                                 String administration = medication.getString("administration");
+                                String remarks = medication.getString("remarks");
 
 //                                consumption_time = consumption_time.replace("Morning", "M");
 //                                consumption_time = consumption_time.replace("Afternoon", "A");
@@ -160,8 +164,9 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 //                                consumption_time = consumption_time.replace(" ", "");
                                 consumption_time = consumption_time.replaceAll(" +", " ");
 
-                                MedicationObject medObj = new MedicationObject(id, brand_name, generic_name, dosage_form,
-                                        per_dosage, total_dosage, consumption_time, patient_id, administration);
+                                MedicationObject medObj = new MedicationObject(id, brand_name,
+                                        generic_name, dosage_form, per_dosage, total_dosage,
+                                        consumption_time, patient_id, administration, remarks);
 
                                 values = medObj.getContentValues();
                                 if (!medicationDBHandler.CheckIsDataAlreadyInDBorNot(MedicationDatabaseSQLiteHandler.TABLE_MEDICATIONS,
@@ -259,6 +264,62 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
                 Map<String, String> params = new HashMap<String, String>();
                 params.put("med_id", String.valueOf(med_id));
                 params.put("newConsumptionTime", newConsumptionTime);
+
+                return params;
+            }
+        };
+
+        // Adding request to request queue
+        VolleyController.getInstance(mContext).addToRequestQueue(req);
+    }
+
+    /**
+     * Block marked medication on remote medication DB
+     * */
+    private void blockMedicationRemoteDB(final int med_id) {
+        StringRequest req = new StringRequest(Request.Method.POST, AppConfig.URL_BLOCK_MEDICATION,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        Log.d("blockMedication", response);
+
+                        try {
+                            JSONObject jObj = new JSONObject(response);
+                            boolean error = jObj.getBoolean("error");
+
+                            // Check for error node in json
+                            if (!error) {
+                                String dispMessage = "Medication has been marked to be reviewed by your physician.";
+                                Toast.makeText(mContext,
+                                        dispMessage, Toast.LENGTH_LONG).show();
+                            } else {
+                                // Error in login. Get the error message
+                                String errorMsg = jObj.getString("error_msg");
+                                Toast.makeText(mContext,
+                                        errorMsg, Toast.LENGTH_LONG).show();
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                            Toast.makeText(mContext,
+                                    "Error: " + e.getMessage(),
+                                    Toast.LENGTH_LONG).show();
+                        }
+//                        pDialog.hide();
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+//                VolleyLog.d(TAG, "Error: " + error.getMessage());
+                Toast.makeText(mContext,
+                        error.getMessage(), Toast.LENGTH_SHORT).show();
+//                pDialog.hide();
+            }
+        }) {
+
+            @Override
+            protected Map<String, String> getParams() {
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("med_id", String.valueOf(med_id));
 
                 return params;
             }
