@@ -17,6 +17,7 @@ public class MedicationObject {
     String _totalDosage = "";
     String _consumptionTime = "";
     String _administration = "";
+    String _remarks = "";
 
     public MedicationObject(){
     }
@@ -26,7 +27,9 @@ public class MedicationObject {
         this._genericName = genericName;
     }
 
-    public MedicationObject(int id, String brandName, String genericName, String dosageForm, String perDosage, String totalDosage, String consumptionTime, String patientID, String administration){
+    public MedicationObject(int id, String brandName, String genericName, String dosageForm,
+                            String perDosage, String totalDosage, String consumptionTime,
+                            String patientID, String administration, String remarks){
         this._ID = id;
         this._brandName = brandName;
         this._genericName = genericName;
@@ -36,6 +39,7 @@ public class MedicationObject {
         this._consumptionTime = consumptionTime;
         this._patientID = patientID;
         this._administration = administration;
+        this._remarks = remarks;
     }
 
     public int get_id(){
@@ -74,9 +78,18 @@ public class MedicationObject {
         return this._administration;
     }
 
+    public String get_remarks(){
+        return this._remarks;
+    }
+
     public void set_consumptionTime(String newConsumptionTime){
         this._consumptionTime = newConsumptionTime;
     }
+
+    public void set_remarksBlock(){
+        this._remarks = "Patient has stopped taking this medicine.";
+    }
+
     /**
      * Convenient method to get the objects data members in ContentValues object.
      * This will be useful for Content Provider operations,
@@ -95,6 +108,7 @@ public class MedicationObject {
         values.put(MedicationDatabaseSQLiteHandler.KEY_CONSUMPTION_TIME, _consumptionTime);
         values.put(MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID, _patientID);
         values.put(MedicationDatabaseSQLiteHandler.KEY_ADMINISTRATION, _administration);
+        values.put(MedicationDatabaseSQLiteHandler.KEY_REMARKS, _remarks);
         return values;
     }
 
@@ -109,7 +123,8 @@ public class MedicationObject {
         String consumptionTime = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_CONSUMPTION_TIME));
         String patientID = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID));
         String administration = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_ADMINISTRATION));
+        String remarks = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_REMARKS));
 
-        return new MedicationObject(id, brandName, genericName, dosageForm, perDosage, totalDosage, consumptionTime, patientID, administration);
+        return new MedicationObject(id, brandName, genericName, dosageForm, perDosage, totalDosage, consumptionTime, patientID, administration, remarks);
     }
 }
