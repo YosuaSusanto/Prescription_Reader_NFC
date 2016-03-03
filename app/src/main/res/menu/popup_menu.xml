@@ -7,4 +7,16 @@
         android:title="@string/action_changeReminderTiming"
         android:visible="true"/>
 
+    <item
+        android:id="@+id/item_stopTakingMedicine"
+        android:showAsAction="ifRoom|withText"
+        android:title="@string/action_stopTakingMedicine"
+        android:visible="true"/>
+
+    <item
+        android:id="@+id/item_showMoreInfo"
+        android:showAsAction="ifRoom|withText"
+        android:title="@string/action_showMoreInfo"
+        android:visible="true"/>
+
 </menu>
