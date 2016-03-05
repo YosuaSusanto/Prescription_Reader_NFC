@@ -62,11 +62,13 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import helper.DataTransferInterface;
 import helper.SessionManager;
+import helper.VolleyCallback;
 
 
 public class MainActivity extends FragmentActivity
@@ -74,6 +76,7 @@ public class MainActivity extends FragmentActivity
         Monitoring.OnFragmentInteractionListener, NavigationDrawerFragment.NavigationDrawerCallbacks, Communicator, DataTransferInterface {
 
     private boolean useNFC = true;
+    public String PatientName = "";
     public String BrandName = "";
     public String GenericName = "";
     public String DosageForm = "";
@@ -523,7 +526,7 @@ public class MainActivity extends FragmentActivity
             for (NdefRecord ndefRecord : records) {
                 if (ndefRecord.getTnf() == NdefRecord.TNF_WELL_KNOWN && Arrays.equals(ndefRecord.getType(), NdefRecord.RTD_TEXT)) {
                     try {
-                        BrandName = readText(records[0]);
+                        PatientName = readText(records[0]);
                         GenericName = readText(records[1]);
                         DosageForm = readText(records[2]);
                         PerDosage = readText(records[3]);
@@ -532,7 +535,7 @@ public class MainActivity extends FragmentActivity
 //                        PatientID = readText(records[6]);
 //                        Administration = readText(records[7]);
 
-                        return BrandName;
+                        return GenericName;
                     } catch (UnsupportedEncodingException e) {
                         Log.e(TAG, "Unsupported Encoding", e);
                     }
@@ -574,26 +577,62 @@ public class MainActivity extends FragmentActivity
         @Override
         protected void onPostExecute(String result) {
             if (result != null) {
-                populateLocalDB(PatientID);
+                getNRIC(PatientName, new VolleyCallback() {
+                    @Override
+                    public void onSuccess(String result) {
+                        PatientID = result;
 
-                FragmentManager manager = getFragmentManager();
+                        session.setPatientID(PatientID);
+                        populateLocalDB(PatientID);
 
-                mScanFragment = (Scan) manager.findFragmentByTag("scanFragment");
+                        ContentResolver resolver = getContentResolver();
+                        Uri uri = MedicationContract.Medications.CONTENT_URI;
+                        String[] projection = new String[]{MedicationDatabaseSQLiteHandler.KEY_ID, MedicationDatabaseSQLiteHandler.KEY_TOTAL_DOSAGE,
+                                MedicationDatabaseSQLiteHandler.KEY_GENERIC_NAME, MedicationDatabaseSQLiteHandler.KEY_DOSAGE_FORM,
+                                MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID};
+                        String selection = MedicationDatabaseSQLiteHandler.KEY_GENERIC_NAME + " = ? AND " +
+                                MedicationDatabaseSQLiteHandler.KEY_DOSAGE_FORM + " = ? AND " +
+                                MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID + " = ?";
+                        String[] selectionArgs = new String[]{GenericName, DosageForm, PatientID};
+                        Cursor cursor =
+                                resolver.query(uri,
+                                        projection,
+                                        selection,
+                                        selectionArgs,
+                                        null);
+                        int saved_TotalDosage = -1;
+                        if (cursor != null) {
+                            if (cursor.moveToFirst()) {
+                                saved_TotalDosage = cursor.getInt(cursor.getColumnIndex("TotalDosage"));//MedicationDatabaseSQLiteHandler.COL_TOTALDOSAGE);
+                                BrandName = cursor.getString(cursor.getColumnIndex("BrandName"));
+                            }
+                            cursor.close();
+                        }
+                        String tempDosage, brandName;
+                        if (saved_TotalDosage != -1) {
+                            tempDosage = Integer.toString(saved_TotalDosage);
+                        } else {
+                            tempDosage = TotalDosage;
+                        }
+                        FragmentManager manager = getFragmentManager();
 
-                if (mScanFragment != null) {
-                    Log.d("debug", "fragment is not null");
-                    mScanFragment.changeText(BrandName, GenericName, DosageForm, PerDosage, TotalDosage, ConsumptionTime);
-                    SharedPreferences prefs = PreferenceManager
-                            .getDefaultSharedPreferences(mContext);
-                    Toast.makeText(mContext, "toggle is " + prefs.getBoolean("pref_textToSpeechToggle", false),
-                            Toast.LENGTH_SHORT).show();
-                    if (prefs.getBoolean("pref_textToSpeechToggle", false)) {
-                        readOutMedicationInfo();
+                        mScanFragment = (Scan) manager.findFragmentByTag("scanFragment");
+
+                        if (mScanFragment != null) {
+                            Log.d("debug", "fragment is not null");
+                            mScanFragment.changeText(PatientName, GenericName, DosageForm, PerDosage, tempDosage, ConsumptionTime);
+                            SharedPreferences prefs = PreferenceManager
+                                    .getDefaultSharedPreferences(mContext);
+                            Toast.makeText(mContext, "toggle is " + prefs.getBoolean("pref_textToSpeechToggle", false),
+                                    Toast.LENGTH_SHORT).show();
+                            if (prefs.getBoolean("pref_textToSpeechToggle", false)) {
+                                readOutMedicationInfo();
+                            }
+                        } else {
+                            Log.e("DEBUG", "fragment is NULL");
+                        }
                     }
-                } else {
-                    Log.e("DEBUG", "fragment is NULL");
-                }
-
+                });
             }
         }
     }
@@ -726,7 +765,7 @@ public class MainActivity extends FragmentActivity
     }
     ////////// FOR DEBUGGING PURPOSE ///////////
     private void scanItemOne() {
-        BrandName = "Leukeran";
+        PatientName = "Yosua";
         GenericName = "Chlorambucil";
         DosageForm = "Tablet";
         PerDosage = "5";
@@ -738,19 +777,19 @@ public class MainActivity extends FragmentActivity
     }
 
     private void scanItemTwo() {
-        BrandName = "Xeloda";
-        GenericName = "Capecitabine";
+        PatientName = "Yosua";
+        GenericName = "Afatinib";
         DosageForm = "Tablet";
         PerDosage = "5";
-        TotalDosage = "55";
-        ConsumptionTime = "07:00, 12:30, 17:45";
-        PatientID = "G1159974K";
-        Administration = "Should be taken with food: Take w/in ½ hr after meals.";
+        TotalDosage = "25";
+        ConsumptionTime = "09:00, 19:00";
         updateScanFragment();
     }
 
     private void scanItemThree() {
-        Intent intent = new Intent(this, NotificationBarAlarm.class);
+        Intent intent = new Intent(this, DefaultConsumptionReceiver.class);
+        intent.putExtra("account", mAccount);
+        intent.putExtra("patientID", session.getPatientID());
         sendBroadcast(intent);
     }
 
@@ -802,50 +841,56 @@ public class MainActivity extends FragmentActivity
     }
 
     private void updateScanFragment() {
-        int saved_TotalDosage = -1;
-        ContentResolver resolver = getContentResolver();
-        Uri uri = MedicationContract.Medications.CONTENT_URI;
-        String[] projection = new String[]{MedicationDatabaseSQLiteHandler.KEY_ID, MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID,
-                MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME};
-        String selection = MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID + " = ?";
-        String[] selectionArgs;
-        Cursor cursor;
+        getNRIC(PatientName, new VolleyCallback() {
+            @Override
+            public void onSuccess(String result) {
+                PatientID = result;
+                if (!session.getPatientID().equals(PatientID)) {
+                    session.setPatientID(PatientID);
+                    populateLocalDB(PatientID);
+                    Log.d("Test", "Local Database populated");
+                    if (!PatientID.equals("")) {
+//                        Intent intent = new Intent(this, DefaultConsumptionReceiver.class);
+//                        intent.putExtra("account", mAccount);
+//                        intent.putExtra("patientID", PatientID);
+//                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//                        sendBroadcast(intent);
+                    }
+                }
+                int saved_TotalDosage = -1;
+                ContentResolver resolver = getContentResolver();
+                Uri uri = MedicationContract.Medications.CONTENT_URI;
+                String[] projection = new String[]{MedicationDatabaseSQLiteHandler.KEY_ID, MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID,
+                        MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME};
+                String selection = MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID + " = ?";
+                String[] selectionArgs;
+                Cursor cursor;
 
-        if (!session.getPatientID().equals(PatientID)) {
-            session.setPatientID(PatientID);
-            populateLocalDB(PatientID);
-            Log.d("Test", "Local Database populated");
-            if (!PatientID.equals("")) {
-                Intent intent = new Intent(this, DefaultConsumptionReceiver.class);
-                intent.putExtra("account", mAccount);
-                intent.putExtra("patientID", PatientID);
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                sendBroadcast(intent);
-            }
-        }
 
-        resolver = getContentResolver();
-        uri = MedicationContract.Medications.CONTENT_URI;
-        projection = new String[]{MedicationDatabaseSQLiteHandler.KEY_ID, MedicationDatabaseSQLiteHandler.KEY_TOTAL_DOSAGE,
-                MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME, MedicationDatabaseSQLiteHandler.KEY_DOSAGE_FORM,
-                MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID};
-        selection = MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME + " = ? AND " +
-                MedicationDatabaseSQLiteHandler.KEY_DOSAGE_FORM + " = ? AND " +
-                MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID + " = ?";
-        selectionArgs = new String[]{BrandName, DosageForm, PatientID};
-        cursor =
-                resolver.query(uri,
-                        projection,
-                        selection,
-                        selectionArgs,
-                        null);
-        if (cursor != null) {
-            if (cursor.moveToFirst()) {
-                saved_TotalDosage = cursor.getInt(cursor.getColumnIndex("TotalDosage"));//MedicationDatabaseSQLiteHandler.COL_TOTALDOSAGE);
-            }
-            cursor.close();
-        }
-        FragmentManager manager = getFragmentManager();
+                resolver = getContentResolver();
+                uri = MedicationContract.Medications.CONTENT_URI;
+                projection = new String[]{MedicationDatabaseSQLiteHandler.KEY_ID,
+                        MedicationDatabaseSQLiteHandler.KEY_TOTAL_DOSAGE, MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME,
+                        MedicationDatabaseSQLiteHandler.KEY_GENERIC_NAME, MedicationDatabaseSQLiteHandler.KEY_DOSAGE_FORM,
+                        MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID};
+                selection = MedicationDatabaseSQLiteHandler.KEY_GENERIC_NAME + " = ? AND " +
+                        MedicationDatabaseSQLiteHandler.KEY_DOSAGE_FORM + " = ? AND " +
+                        MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID + " = ?";
+                selectionArgs = new String[]{GenericName, DosageForm, PatientID};
+                cursor =
+                        resolver.query(uri,
+                                projection,
+                                selection,
+                                selectionArgs,
+                                null);
+                if (cursor != null) {
+                    if (cursor.moveToFirst()) {
+                        saved_TotalDosage = cursor.getInt(cursor.getColumnIndex("TotalDosage"));//MedicationDatabaseSQLiteHandler.COL_TOTALDOSAGE);
+                        BrandName = cursor.getString(cursor.getColumnIndex("BrandName"));
+                    }
+                    cursor.close();
+                }
+                FragmentManager manager = getFragmentManager();
 
 //        Can't be implemented, commit will only be executed when the main thread is ready
 //        Fragment fragment = new Scan();
@@ -855,24 +900,26 @@ public class MainActivity extends FragmentActivity
 //        manager.executePendingTransactions();
 //        mNavigationDrawerFragment.selectItem(0);
 
-        mScanFragment = (Scan) manager.findFragmentByTag("scanFragment");
+                mScanFragment = (Scan) manager.findFragmentByTag("scanFragment");
 
-        if (mScanFragment != null) {
-            Log.d("debug", "fragment is not null");
-            String tempDosage;
-            if (saved_TotalDosage != -1) {
-                tempDosage = Integer.toString(saved_TotalDosage);
-            } else {
-                tempDosage = TotalDosage;
+                if (mScanFragment != null) {
+                    Log.d("debug", "fragment is not null");
+                    String tempDosage;
+                    if (saved_TotalDosage != -1) {
+                        tempDosage = Integer.toString(saved_TotalDosage);
+                    } else {
+                        tempDosage = TotalDosage;
+                    }
+                    mScanFragment.changeText(PatientName, GenericName, DosageForm, PerDosage, tempDosage, ConsumptionTime);
+                    SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+                    if (prefs.getBoolean("pref_textToSpeechToggle", false)) {
+                        readOutMedicationInfo();
+                    }
+                } else {
+                    Log.e("DEBUG", "fragment is NULL");
+                }
             }
-            mScanFragment.changeText(BrandName, GenericName, DosageForm, PerDosage, tempDosage, ConsumptionTime);
-            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-            if (prefs.getBoolean("pref_textToSpeechToggle", false)) {
-                readOutMedicationInfo();
-            }
-        } else {
-            Log.e("DEBUG", "fragment is NULL");
-        }
+        });
     }
     //////////////////////////////////////
 
@@ -927,16 +974,16 @@ public class MainActivity extends FragmentActivity
     public void respondConsumeMed() {
         Log.d("Respond", "ConsumeMedTest Works");
 
-        if ((!BrandName.equals("")) && (!DosageForm.equals(""))) {
+        if ((!GenericName.equals("")) && (!DosageForm.equals(""))) {
             ContentResolver resolver = getContentResolver();
             Uri uri = MedicationContract.Medications.CONTENT_URI;
             String[] projection = new String[]{MedicationDatabaseSQLiteHandler.KEY_ID, MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID,
-                    MedicationDatabaseSQLiteHandler.KEY_TOTAL_DOSAGE, MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME,
+                    MedicationDatabaseSQLiteHandler.KEY_TOTAL_DOSAGE, MedicationDatabaseSQLiteHandler.KEY_GENERIC_NAME,
                     MedicationDatabaseSQLiteHandler.KEY_DOSAGE_FORM};
             String selection = MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID + " = ? AND " +
-                    MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME + " = ? AND " +
+                    MedicationDatabaseSQLiteHandler.KEY_GENERIC_NAME + " = ? AND " +
                     MedicationDatabaseSQLiteHandler.KEY_DOSAGE_FORM + " = ?";
-            String[] selectionArgs = new String[]{session.getPatientID(), BrandName, DosageForm};
+            String[] selectionArgs = new String[]{session.getPatientID(), GenericName, DosageForm};
             Cursor cursor =
                     resolver.query(uri,
                             projection,
@@ -990,14 +1037,14 @@ public class MainActivity extends FragmentActivity
                     String lastConsumptionTimeToday = "", consumptionTimeToBeUpdated = "";
                     if (cursor3 != null) {
                         if (cursor3.moveToFirst()) {
-                            lastConsumptionTimeToday = cursor3.getString(cursor3.getColumnIndex("ConsumptionTime"));
+                            lastConsumptionTimeToday = cursor3.getString(cursor3.getColumnIndex("ConsumedAt"));
                         }
                     }
                     if (cursor2 != null) {
                         if (cursor2.moveToFirst()) {
                             long consumption_Id = cursor2.getLong(cursor2.getColumnIndex("_id"));//MedicationDatabaseSQLiteHandler.COL_ROWID);
                             String curTime = getCurrentTimeStamp();
-                            consumptionTimeToBeUpdated = cursor2.getString(cursor2.getColumnIndex("ConsumptionTime"));
+                            consumptionTimeToBeUpdated = cursor2.getString(cursor2.getColumnIndex("ConsumedAt"));
                             SimpleDateFormat s1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                             Date dateNo = s1.parse(consumptionTimeToBeUpdated, new ParsePosition(0));
                             Date dateYes = s1.parse(lastConsumptionTimeToday, new ParsePosition(0));
@@ -1014,7 +1061,7 @@ public class MainActivity extends FragmentActivity
                                 resolver.update(MedicationContract.Consumption.CONTENT_URI, values, selection, selectionArgs);
                                 Toast.makeText(this, "saved_Id: " + saved_Id + ", curTime: " + curTime + ", totalDosage: " + effectiveTotalDosage,
                                         Toast.LENGTH_LONG).show();
-                                updateConsumptionsRemoteDB((int)saved_Id, curTime, "Yes", String.valueOf(effectiveTotalDosage));
+                                updateConsumptionsRemoteDB((int)saved_Id, consumptionTimeToBeUpdated, curTime, "Yes", String.valueOf(effectiveTotalDosage));
                             } else { // dateNo.compareTo(dateYes) < 0
                                 values = new ContentValues();
                                 values.put(MedicationDatabaseSQLiteHandler.KEY_MEDICATION_ID, saved_Id);
@@ -1259,6 +1306,57 @@ public class MainActivity extends FragmentActivity
         }
     }
 
+
+    /**
+     * Get NRIC given the patient name
+     * */
+    private void getNRIC(final String patient_name, final VolleyCallback callback) {
+        StringRequest req = new StringRequest(Request.Method.POST, AppConfig.URL_GET_NRIC,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        Log.d("getNRIC", response);
+
+                        try {
+                            // Parsing json array response
+                            // loop through each json object
+                            JSONArray jArr = new JSONArray(response);
+                            JSONObject medication = (JSONObject) jArr.get(0);
+
+                            String nric = medication.getString("nric");
+                            callback.onSuccess(nric);
+//                            return filePath;
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                            Toast.makeText(MainActivity.this,
+                                    "Error in getting nric (JSONException): " + e.getMessage(),
+                                    Toast.LENGTH_LONG).show();
+                        }
+//                        pDialog.hide();
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+//                VolleyLog.d(TAG, "Error: " + error.getMessage());
+                Toast.makeText(MainActivity.this, "Error in gettic nric (VolleyError): " +
+                        error.getMessage(), Toast.LENGTH_SHORT).show();
+//                pDialog.hide();
+            }
+        }) {
+
+            @Override
+            protected Map<String, String> getParams() {
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("patient_name", patient_name);
+
+                return params;
+            }
+        };
+
+        // Adding request to request queue
+        VolleyController.getInstance(this).addToRequestQueue(req);
+    }
+
     /**
      * Populate local db with medication data from server
      * */
@@ -1344,8 +1442,9 @@ public class MainActivity extends FragmentActivity
     /**
      * Update consumption details on remote medication DB
      * */
-    private void updateConsumptionsRemoteDB(final int med_id, final String consumption_time,
-                                            final String is_taken, final String remaining_dosage) {
+    private void updateConsumptionsRemoteDB(final int med_id, final String consumption_time_for_update,
+                                            final String consumption_time, final String is_taken,
+                                            final String remaining_dosage) {
         // Pass the settings flags by inserting them in a bundle
         Bundle settingsBundle = new Bundle();
         settingsBundle.putBoolean(
@@ -1354,8 +1453,8 @@ public class MainActivity extends FragmentActivity
                 ContentResolver.SYNC_EXTRAS_EXPEDITED, true);
         settingsBundle.putString("functions", "updateConsumption");
         settingsBundle.putInt("med_id", med_id);
+        settingsBundle.putString("consumption_time_for_update", consumption_time_for_update);
         settingsBundle.putString("consumption_time", consumption_time);
-        settingsBundle.putString("is_taken", "Yes");
         settingsBundle.putString("remaining_dosage", remaining_dosage);
         /*
          * Request the sync for the default account, authority, and
@@ -1474,7 +1573,7 @@ public class MainActivity extends FragmentActivity
                     "Feature not supported in your device", Toast.LENGTH_SHORT).show();
 
         }else{
-            stringToBeRead = "This is " + BrandName + ". Take " + PerDosage + " "
+            stringToBeRead = "This is " + GenericName + ". Take " + PerDosage + " "
                     + DosageForm + " for " + frequency + timeOrTimes + consumptionTimes;
             float rate = (float) 0.85;
             textToSpeechObject.setSpeechRate(rate);

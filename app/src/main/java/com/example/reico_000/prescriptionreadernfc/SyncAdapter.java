@@ -92,10 +92,10 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
             insertDefaultConsumptionRemoteDB(med_id, consumption_time, is_taken, remaining_dosage);
         } else if (functions.equals("updateConsumption")) {
             int med_id = extras.getInt("med_id");
+            String consumption_time_for_update = extras.getString("consumption_time_for_update");
             String consumption_time = extras.getString("consumption_time");
-            String is_taken = extras.getString("is_taken");
             String remaining_dosage = extras.getString("remaining_dosage");
-            updateConsumptionsRemoteDB(med_id, consumption_time, is_taken, remaining_dosage);
+            updateConsumptionsRemoteDB(med_id, consumption_time_for_update, consumption_time, remaining_dosage);
         } else if (functions.equals("populateLocalDB")) {
             String patient_id = extras.getString("patient_id");
             populateLocalDB(patient_id);
@@ -233,8 +233,8 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
                                 } else if (operation.equals("delete")) {
                                     dispMessage = "Deleted " + row_nums + "row(s)";
                                 }
-                                Toast.makeText(mContext,
-                                        dispMessage, Toast.LENGTH_LONG).show();
+//                                Toast.makeText(mContext,
+//                                        dispMessage, Toast.LENGTH_LONG).show();
                             } else {
                                 // Error in login. Get the error message
                                 String errorMsg = jObj.getString("error_msg");
@@ -476,7 +476,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
                             // Check for error node in json
                             if (!error) {
                                 Toast.makeText(mContext,
-                                        response, Toast.LENGTH_LONG).show();
+                                        "Initial consumption data inserted", Toast.LENGTH_LONG).show();
                             } else {
                                 // Error in login. Get the error message
                                 String errorMsg = jObj.getString("error_msg");
@@ -518,8 +518,8 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
     /**
      * Update consumption details on remote medication DB
      * */
-    private void updateConsumptionsRemoteDB(final int med_id, final String consumption_time,
-                                            final String is_taken, final String remaining_dosage) {
+    private void updateConsumptionsRemoteDB(final int med_id, final String consumption_time_for_update,
+                                            final String consumption_time, final String remaining_dosage) {
         StringRequest req = new StringRequest(Request.Method.POST, AppConfig.URL_UPDATE_CONSUMPTION,
                 new Response.Listener<String>() {
                     @Override
@@ -534,8 +534,8 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
                             if (!error) {
                                 String row_nums = jObj.getString("row_nums");
                                 String dispMessage = "Updated " + row_nums + "row(s)";
-                                Toast.makeText(mContext,
-                                        dispMessage, Toast.LENGTH_LONG).show();
+//                                Toast.makeText(mContext,
+//                                        dispMessage, Toast.LENGTH_LONG).show();
                             } else {
                                 // Error in updating. Get the error message
                                 String errorMsg = jObj.getString("error_msg");
@@ -561,8 +561,8 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
             protected Map<String, String> getParams() {
                 Map<String, String> params = new HashMap<String, String>();
                 params.put("med_id", String.valueOf(med_id));
+                params.put("consumption_time_for_update", consumption_time_for_update);
                 params.put("consumption_time", consumption_time);
-                params.put("is_taken", is_taken);
                 params.put("remaining_dosage", remaining_dosage);
 
                 return params;
