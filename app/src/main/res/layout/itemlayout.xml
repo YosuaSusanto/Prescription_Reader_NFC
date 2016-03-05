@@ -23,10 +23,10 @@
         android:textAppearance="?android:attr/textAppearanceMedium"
         android:text="Medium Text"
         android:id="@+id/list_PerDosage"
+        android:textColor="#ff0038bd"
         android:layout_below="@+id/list_DosageForm"
-        android:layout_alignLeft="@+id/list_DosageForm"
-        android:layout_alignStart="@+id/list_DosageForm"
-        android:textColor="#ff0038bd" />
+        android:layout_alignLeft="@+id/List_TotalDosage"
+        android:layout_alignStart="@+id/List_TotalDosage" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -36,10 +36,10 @@
         android:id="@+id/list_GenericName"
         android:layout_gravity="center_horizontal|top"
         android:textStyle="bold"
-        android:layout_above="@+id/list_DosageForm"
+        android:textColor="#ffbd0200"
+        android:layout_alignParentTop="true"
         android:layout_alignLeft="@+id/list_DosageForm"
-        android:layout_alignStart="@+id/list_DosageForm"
-        android:textColor="#ffbd0200" />
+        android:layout_alignStart="@+id/list_DosageForm" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -48,12 +48,10 @@
         android:text="Medium Text"
         android:id="@+id/list_DosageForm"
         android:layout_gravity="center_horizontal|top"
+        android:textColor="#ff0038bd"
         android:layout_alignTop="@+id/textView7"
-        android:layout_toRightOf="@+id/textView7"
-        android:layout_toEndOf="@+id/textView7"
-        android:layout_marginLeft="24dp"
-        android:layout_marginStart="24dp"
-        android:textColor="#ff0038bd" />
+        android:layout_alignLeft="@+id/list_PerDosage"
+        android:layout_alignStart="@+id/list_PerDosage" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -62,10 +60,10 @@
         android:text="Medium Text"
         android:id="@+id/List_TotalDosage"
         android:layout_gravity="right|top"
+        android:textColor="#ff0038bd"
         android:layout_below="@+id/list_PerDosage"
-        android:layout_alignLeft="@+id/list_PerDosage"
-        android:layout_alignStart="@+id/list_PerDosage"
-        android:textColor="#ff0038bd" />
+        android:layout_toRightOf="@+id/textView10"
+        android:layout_toEndOf="@+id/textView10" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -74,10 +72,10 @@
         android:text="Medium Text"
         android:id="@+id/list_ConsumptionTime"
         android:layout_gravity="left|top"
+        android:textColor="#ff0038bd"
         android:layout_below="@+id/List_TotalDosage"
-        android:layout_alignLeft="@+id/List_TotalDosage"
-        android:layout_alignStart="@+id/List_TotalDosage"
-        android:textColor="#ff0038bd" />
+        android:layout_toRightOf="@+id/textView10"
+        android:layout_toEndOf="@+id/textView10" />
 
     <TextView
         android:layout_width="wrap_content"

@@ -286,7 +286,7 @@ public class MedicationListAdapter extends BaseAdapter implements DataTransferIn
                                                     }
                                                 }
                                             });
-                                           break;
+                                            break;
                                         default:
                                             break;
                                     }

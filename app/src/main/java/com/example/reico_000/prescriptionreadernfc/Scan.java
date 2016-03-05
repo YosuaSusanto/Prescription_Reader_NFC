@@ -39,11 +39,6 @@ public class Scan extends Fragment implements View.OnClickListener {
     private TextView totalDosageTextView;
     private TextView consumptionTimeTextView;
 
-    private ImageView scan_Morning;
-    private ImageView scan_Afternoon;
-    private ImageView scan_Evening;
-    private ImageView scan_Before_Sleep;
-
     private Button consumeButton;
     private Button resetButton;
     Communicator comm;
@@ -181,9 +176,5 @@ public class Scan extends Fragment implements View.OnClickListener {
         perDosageTextView.setText("");
         totalDosageTextView.setText("");
         consumptionTimeTextView.setText("");
-        scan_Morning.setVisibility(View.INVISIBLE);
-        scan_Afternoon.setVisibility(View.INVISIBLE);
-        scan_Evening.setVisibility(View.INVISIBLE);
-        scan_Before_Sleep.setVisibility(View.INVISIBLE);
     }
 }

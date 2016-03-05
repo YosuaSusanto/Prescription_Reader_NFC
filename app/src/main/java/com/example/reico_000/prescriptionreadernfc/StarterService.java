@@ -39,11 +39,11 @@ public class StarterService extends Service {
         if (intent.getStringExtra("patientID") != null) {
             patientID = intent.getStringExtra("patientID");
         }
-        if (mAccount == null) {
-            Toast.makeText(this, "Account is null in Service!! PatientID: " + patientID, Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(this, "Account is not null and PatientID: " + patientID, Toast.LENGTH_SHORT).show();
-        }
+//        if (mAccount == null) {
+//            Toast.makeText(this, "Account is null in Service!! PatientID: " + patientID, Toast.LENGTH_SHORT).show();
+//        } else {
+//            Toast.makeText(this, "Account is not null and PatientID: " + patientID, Toast.LENGTH_SHORT).show();
+//        }
 
         scheduleAlarm();
         return START_REDELIVER_INTENT;

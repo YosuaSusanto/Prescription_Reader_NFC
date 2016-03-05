@@ -28,10 +28,11 @@
     <string name="action_showMoreInfo">Show More Info</string>
 
 <!-- TODO: Remove or change this placeholder text -->
+    <string name="patient_name">Patient Name:</string>
     <string name="brand_name">Brand Name:</string>
     <string name="generic_name">Generic Name:</string>
-    <string name="dosage_form">Dosage Form/Strength:</string>
-    <string name="per_dosage">Pills/Tablets Per Dosage:</string>
+    <string name="dosage_form">Dosage Form:</string>
+    <string name="per_dosage">Per Dosage:</string>
     <string name="total_dosage">Total Dosage:</string>
     <string name="consumption_time">Consumption Time:</string>
     <string name="consume">Consume\nMedications</string>
