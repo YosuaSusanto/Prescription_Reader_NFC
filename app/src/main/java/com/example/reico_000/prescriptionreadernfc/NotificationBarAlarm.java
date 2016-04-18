@@ -106,36 +106,37 @@ public class NotificationBarAlarm extends BroadcastReceiver {
                         textToShow += "\n- " + lateMedicineList.get(i);
                     }
                 }
-                Intent notificationIntent = new Intent(context, MainActivity.class);
-                notificationIntent.putExtra("text", textToShow);
-                notificationIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                notificationIntent.setAction("foo");
-                PendingIntent contentIntent = PendingIntent.getActivity(context, 0, notificationIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT);
+                if (medicineList.size() > 0 || lateMedicineList.size() > 0) {
+                    Intent notificationIntent = new Intent(context, MainActivity.class);
+                    notificationIntent.putExtra("text", textToShow);
+                    notificationIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                    notificationIntent.setAction("foo");
+                    PendingIntent contentIntent = PendingIntent.getActivity(context, 0, notificationIntent,
+                            PendingIntent.FLAG_UPDATE_CURRENT);
 
-                NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
+                    NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
 
-                builder = builder.setContentIntent(contentIntent)
-                        .setSmallIcon(R.mipmap.ic_launcher)
-                        .setAutoCancel(true).setContentTitle("Medications Reminder")
-                        .setContentText(textToShow)
-                        .setStyle(new NotificationCompat.BigTextStyle().bigText(textToShow))
-                        .setPriority(Notification.PRIORITY_HIGH);
+                    builder = builder.setContentIntent(contentIntent)
+                            .setSmallIcon(R.mipmap.launcher)
+                            .setAutoCancel(true).setContentTitle("Medications Reminder")
+                            .setContentText(textToShow)
+                            .setStyle(new NotificationCompat.BigTextStyle().bigText(textToShow))
+                            .setPriority(Notification.PRIORITY_HIGH);
 
-                AudioManager am = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
-                if (prefs.getBoolean("pref_reminderVibrationToggle", true) &&
-                        am.getRingerMode() != AudioManager.RINGER_MODE_SILENT) {
-                    builder = builder.setDefaults(Notification.DEFAULT_VIBRATE);
-                } else {
-                    builder = builder.setVibrate(new long[0]);
+                    AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+                    if (prefs.getBoolean("pref_reminderVibrationToggle", true)) {
+                        builder = builder.setDefaults(Notification.DEFAULT_VIBRATE);
+                    } else {
+                        builder = builder.setVibrate(new long[0]);
+                    }
+
+                    if (prefs.getBoolean("pref_reminderSoundToggle", true) &&
+                            am.getRingerMode() == AudioManager.RINGER_MODE_NORMAL) {
+                        builder = builder.setSound(RingtoneManager.
+                                getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
+                    }
+                    notifyManager.notify(0, builder.build());
                 }
-
-                if (prefs.getBoolean("pref_reminderSoundToggle", true) &&
-                        am.getRingerMode() == AudioManager.RINGER_MODE_NORMAL) {
-                    builder = builder.setSound(RingtoneManager.
-                            getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
-                }
-                notifyManager.notify(0, builder.build());
             }
         }
     }
@@ -302,9 +303,9 @@ public class NotificationBarAlarm extends BroadcastReceiver {
 
                 if (consumptionTime2.contains(currentReminderTime) && reminderOn) {
 //                if (consumptionTime2.contains(timeString)) {
-                    medicineList.add(brandName + " (" + genericName + ")");
+                    medicineList.add(genericName + " (" + brandName + ")");
                 } else if (consumptionTime2.contains(currentReminderTime) && lateReminderOn) {
-                    lateMedicineList.add(brandName + " (" + genericName + ")");
+                    lateMedicineList.add(genericName + " (" + brandName + ")");
                 }
             }
             cursor2.close();

@@ -1,5 +1,6 @@
 package com.example.reico_000.prescriptionreadernfc;
 
+import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.app.TimePickerDialog;
@@ -16,6 +17,7 @@ import java.util.Calendar;
 public class TimePickerFragment extends DialogFragment {
     private TimePickerDialog.OnTimeSetListener listener;
 
+    @SuppressLint("ValidFragment")
     public TimePickerFragment(TimePickerDialog.OnTimeSetListener listener) {
         super();
         this.listener = listener;

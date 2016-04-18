@@ -21,7 +21,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -83,7 +85,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
      * Put the data transfer code here.
      */
         String functions = extras.getString("functions");
-
+        Log.d("SyncAdapter", functions);
         if (functions.equals("insertConsumption")) {
             int med_id = extras.getInt("med_id");
             String consumption_time = extras.getString("consumption_time");
@@ -112,6 +114,10 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
             String oldConsumptionTime = extras.getString("oldConsumptionTime");
             String newConsumptionTime = extras.getString("newConsumptionTime");
             updateUntakenConsumptionTimeRemoteDB(med_id, oldConsumptionTime, newConsumptionTime);
+        } else if (functions.equals("updateRemarks")) {
+            int med_id = extras.getInt("med_id");
+            String remarks = extras.getString("remarks");
+            updateRemarksRemoteDB(med_id, remarks);
         } else if (functions.equals("blockMedication")) {
             int med_id = extras.getInt("med_id");
             blockMedicationRemoteDB(med_id);
@@ -133,11 +139,11 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
                     @Override
                     public void onResponse(String response) {
                         Log.d("populateLocalDB Method", response);
-
+                        String patient_id = "";
                         try {
                             ContentResolver resolver = mContext.getContentResolver();
                             ContentValues values = new ContentValues();
-
+                            List<Integer> onlineIdList = new ArrayList<Integer>();
                             // Parsing json array response
                             // loop through each json object
                             JSONArray jArr = new JSONArray(response);
@@ -152,9 +158,11 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
                                 String per_dosage = medication.getString("per_dosage");
                                 String total_dosage = medication.getString("total_dosage");
                                 String consumption_time = medication.getString("consumption_time");
-                                String patient_id = medication.getString("patient_id");
+                                patient_id = medication.getString("patient_id");
                                 String administration = medication.getString("administration");
                                 String remarks = medication.getString("remarks");
+                                String sideEffects = medication.getString("sideEffects");
+                                String prescriptionDate = medication.getString("prescriptionDate");
 
 //                                consumption_time = consumption_time.replace("Morning", "M");
 //                                consumption_time = consumption_time.replace("Afternoon", "A");
@@ -166,8 +174,9 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
                                 MedicationObject medObj = new MedicationObject(id, brand_name,
                                         generic_name, dosage_form, per_dosage, total_dosage,
-                                        consumption_time, patient_id, administration, remarks);
-
+                                        consumption_time, patient_id, administration, remarks,
+                                        sideEffects, prescriptionDate);
+                                onlineIdList.add(id);
                                 values = medObj.getContentValues();
                                 if (!medicationDBHandler.CheckIsDataAlreadyInDBorNot(MedicationDatabaseSQLiteHandler.TABLE_MEDICATIONS,
                                         MedicationDatabaseSQLiteHandler.KEY_ID, String.valueOf(id))) {
@@ -178,11 +187,12 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
                                 }
                                 values.clear();
                             }
+                            medicationDBHandler.deleteNonExistingMedication(onlineIdList, patient_id);
                         } catch (JSONException e) {
                             e.printStackTrace();
-                            Toast.makeText(mContext,
-                                    "Error: " + e.getMessage(),
-                                    Toast.LENGTH_LONG).show();
+//                            Toast.makeText(mContext,
+//                                    "Error: " + e.getMessage(),
+//                                    Toast.LENGTH_LONG).show();
                         }
 //                        pDialog.hide();
                     }
@@ -190,8 +200,8 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
             @Override
             public void onErrorResponse(VolleyError error) {
 //                VolleyLog.d(TAG, "Error: " + error.getMessage());
-                Toast.makeText(mContext,
-                        error.getMessage(), Toast.LENGTH_SHORT).show();
+//                Toast.makeText(mContext,
+//                        error.getMessage(), Toast.LENGTH_SHORT).show();
 //                pDialog.hide();
             }
         }) {
@@ -330,6 +340,65 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
     }
 
     /**
+     * Update medication remarks on remote medication DB
+     * */
+    private void updateRemarksRemoteDB(final int med_id, final String remarks) {
+        StringRequest req = new StringRequest(Request.Method.POST, AppConfig.URL_UPDATE_REMARKS,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        Log.d("udpateRemarks", response);
+
+                        try {
+                            JSONObject jObj = new JSONObject(response);
+                            boolean error = jObj.getBoolean("error");
+
+                            // Check for error node in json
+                            if (!error) {
+//                                if (!remarks.equals("")) {
+//                                    String dispMessage = "Medication has been marked to be reviewed by your physician.";
+//                                    Toast.makeText(mContext,
+//                                            dispMessage, Toast.LENGTH_LONG).show();
+//                                }
+                            } else {
+                                // Error in login. Get the error message
+                                String errorMsg = jObj.getString("error_msg");
+                                Toast.makeText(mContext,
+                                        errorMsg, Toast.LENGTH_LONG).show();
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                            Toast.makeText(mContext,
+                                    "Error: " + e.getMessage(),
+                                    Toast.LENGTH_LONG).show();
+                        }
+//                        pDialog.hide();
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+//                VolleyLog.d(TAG, "Error: " + error.getMessage());
+                Toast.makeText(mContext,
+                        error.getMessage(), Toast.LENGTH_SHORT).show();
+//                pDialog.hide();
+            }
+        }) {
+
+            @Override
+            protected Map<String, String> getParams() {
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("med_id", String.valueOf(med_id));
+                params.put("remarks", remarks);
+
+                return params;
+            }
+        };
+
+        // Adding request to request queue
+        VolleyController.getInstance(mContext).addToRequestQueue(req);
+    }
+
+    /**
      * Update untaken consumption time on remote medication DB
      * */
     private void updateUntakenConsumptionTimeRemoteDB(final int med_id, final String oldConsumptionTime,
@@ -354,8 +423,8 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
                                 } else if (operation.equals("delete")) {
                                     dispMessage = "Deleted " + row_nums + "row(s)";
                                 }
-                                Toast.makeText(mContext,
-                                        dispMessage, Toast.LENGTH_LONG).show();
+//                                Toast.makeText(mContext,
+//                                        dispMessage, Toast.LENGTH_LONG).show();
                             } else {
                                 // Error in login. Get the error message
                                 String errorMsg = jObj.getString("error_msg");
@@ -419,8 +488,8 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
                                 } else if (operation.equals("delete")) {
                                     dispMessage = "Deleted " + row_nums + "row(s)";
                                 }
-                                Toast.makeText(mContext,
-                                        dispMessage, Toast.LENGTH_LONG).show();
+//                                Toast.makeText(mContext,
+//                                        dispMessage, Toast.LENGTH_LONG).show();
                             } else {
                                 // Error in login. Get the error message
                                 String errorMsg = jObj.getString("error_msg");
@@ -475,8 +544,8 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
                             // Check for error node in json
                             if (!error) {
-                                Toast.makeText(mContext,
-                                        "Initial consumption data inserted", Toast.LENGTH_LONG).show();
+//                                Toast.makeText(mContext,
+//                                        "Initial consumption data inserted", Toast.LENGTH_LONG).show();
                             } else {
                                 // Error in login. Get the error message
                                 String errorMsg = jObj.getString("error_msg");

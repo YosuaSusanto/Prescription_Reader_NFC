@@ -1,35 +1,44 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools" tools:context=".MainActivity">
-    <!--<item android:id="@+id/action_example" android:title="@string/action_example"-->
+    xmlns:tools="http://schemas.android.com/tools" tools:context=".MainActivity"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+<!--<item android:id="@+id/action_example" android:title="@string/action_example"-->
         <!--android:showAsAction="withText|ifRoom" />-->
+    <item
+        android:id="@+id/action_legends"
+        android:icon="@drawable/ic_action_about"
+        android:title="@string/action_legends"
+        android:orderInCategory="100"
+        app:showAsAction="withText|ifRoom" />
+    <item
+        android:id="@+id/action_report"
+        android:icon="@drawable/ic_action_new"
+        android:title="@string/action_report"
+        android:orderInCategory="100"
+        app:showAsAction="" />
     <item
         android:id="@+id/action_settings"
         android:title="@string/action_settings"
         android:orderInCategory="100"
-        android:showAsAction="never" />
+        app:showAsAction="never" />
     <item
         android:id="@+id/action_logout"
         android:title="@string/action_logout"
         android:orderInCategory="100"
-        android:showAsAction="never" />
-    <item
-        android:id="@+id/action_scanItem1"
-        android:title="@string/action_scanItem1"
-        android:orderInCategory="100"
-        android:showAsAction="never" />
-    <item
-        android:id="@+id/action_scanItem2"
-        android:title="@string/action_scanItem2"
-        android:orderInCategory="100"
-        android:showAsAction="never" />
+        app:showAsAction="never" />
     <item
         android:id="@+id/action_scanItem3"
         android:title="@string/action_showNotification"
         android:orderInCategory="100"
-        android:showAsAction="never" />
+        app:showAsAction="never" />
     <item
         android:id="@+id/action_scanItem4"
-        android:title="@string/action_eraseTagData"
+        android:title="@string/action_loadStubConsumption"
         android:orderInCategory="100"
-        android:showAsAction="never" />
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_termsAndConds"
+        android:title="@string/action_termsAndConds"
+        android:orderInCategory="100"
+        app:showAsAction="never" />
 </menu>

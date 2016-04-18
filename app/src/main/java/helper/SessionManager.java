@@ -15,7 +15,6 @@ public class SessionManager {
 
     // Shared Preferences
     SharedPreferences pref;
-
     Editor editor;
     Context _context;
 
@@ -24,10 +23,10 @@ public class SessionManager {
 
     // Shared preferences file name
     private static final String PREF_NAME = "PrescriptionReaderNFCLogin";
-
     private static final String KEY_IS_LOGGEDIN = "isLoggedIn";
-
     private static final String KEY_PATIENT_ID = "patientID";
+    private static final String KEY_PATIENT_NAME = "patientName";
+    private static final String KEY_ACCEPT_TERMS = "isTermsAccepted";
 
     public SessionManager(Context context) {
         this._context = context;
@@ -36,20 +35,28 @@ public class SessionManager {
     }
 
     public void setLogin(boolean isLoggedIn) {
-
         editor.putBoolean(KEY_IS_LOGGEDIN, isLoggedIn);
-
-        // commit changes
         editor.commit();
 
         Log.d(TAG, "User login session modified!");
     }
 
     public void setPatientID(String patientID) {
-
         editor.putString(KEY_PATIENT_ID, patientID);
+        editor.commit();
 
-        // commit changes
+        Log.d(TAG, "User login session modified!");
+    }
+
+    public void setPatientName(String patientName) {
+        editor.putString(KEY_PATIENT_NAME, patientName);
+        editor.commit();
+
+        Log.d(TAG, "User login session modified!");
+    }
+
+    public void setAcceptTerms(boolean isAccepted) {
+        editor.putBoolean(KEY_ACCEPT_TERMS, isAccepted);
         editor.commit();
 
         Log.d(TAG, "User login session modified!");
@@ -61,5 +68,13 @@ public class SessionManager {
 
     public String getPatientID(){
         return pref.getString(KEY_PATIENT_ID, "");
+    }
+
+    public String getPatientName(){
+        return pref.getString(KEY_PATIENT_NAME, "");
+    }
+
+    public boolean isTermsAccepted(){
+        return pref.getBoolean(KEY_ACCEPT_TERMS, false);
     }
 }

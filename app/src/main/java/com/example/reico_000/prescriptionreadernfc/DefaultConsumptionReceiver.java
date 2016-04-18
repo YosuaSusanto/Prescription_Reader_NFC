@@ -34,11 +34,11 @@ public class DefaultConsumptionReceiver extends BroadcastReceiver {
 
 //        if (account != null && !patientID.equals("")) {
         if (account != null && !patientID.equals("")) {
-            Toast.makeText(context, "Account: " + account.name + " (" + account.type + "), PatientID: " + patientID,
-                    Toast.LENGTH_SHORT).show();
+//            Toast.makeText(context, "Account: " + account.name + " (" + account.type + "), PatientID: " + patientID,
+//                    Toast.LENGTH_SHORT).show();
             insertDefaultConsumptionData(context, account, patientID);
         }
-        Toast.makeText(context, "PatientID: " + patientID, Toast.LENGTH_SHORT).show();
+//        Toast.makeText(context, "PatientID: " + patientID, Toast.LENGTH_SHORT).show();
         insertDefaultConsumptionData(context, account, patientID);
     }
 

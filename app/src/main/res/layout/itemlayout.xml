@@ -8,12 +8,13 @@
         android:layout_height="wrap_content"
         android:textAppearance="?android:attr/textAppearanceLarge"
         android:text="Large Text"
-        android:id="@+id/list_BrandName"
+        android:id="@+id/list_GenericName"
         android:layout_gravity="left|top"
         android:layout_alignParentLeft="true"
         android:layout_marginLeft="0dp"
         android:layout_alignParentTop="true"
         android:layout_marginTop="0dp"
+        android:layout_toLeftOf="@+id/list_BrandName"
         android:textStyle="bold"
         android:textColor="#ffbd0200" />
 
@@ -33,7 +34,7 @@
         android:layout_height="wrap_content"
         android:textAppearance="?android:attr/textAppearanceLarge"
         android:text="Large Text"
-        android:id="@+id/list_GenericName"
+        android:id="@+id/list_BrandName"
         android:layout_gravity="center_horizontal|top"
         android:textStyle="bold"
         android:textColor="#ffbd0200"
@@ -83,7 +84,7 @@
         android:textAppearance="?android:attr/textAppearanceMedium"
         android:text="@string/dosage_form"
         android:id="@+id/textView7"
-        android:layout_below="@+id/list_BrandName"
+        android:layout_below="@+id/list_GenericName"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
         android:textStyle="bold" />
@@ -132,5 +133,28 @@
         android:layout_marginRight="15dp"
         android:tint="#78e6e6e6"
         android:background="@android:color/transparent" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="@string/frequency"
+        android:id="@+id/textView6"
+        android:textStyle="bold"
+        android:layout_below="@+id/textView10"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="Medium Text"
+        android:id="@+id/list_Frequency"
+        android:layout_gravity="left|top"
+        android:textColor="#ff0038bd"
+        android:layout_below="@+id/list_ConsumptionTime"
+        android:layout_toRightOf="@+id/textView10"
+        android:layout_toEndOf="@+id/textView10" />
     <!--android:onClick="showPopup"-->
 </RelativeLayout>

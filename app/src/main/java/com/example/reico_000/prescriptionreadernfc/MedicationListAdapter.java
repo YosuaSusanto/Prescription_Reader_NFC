@@ -1,9 +1,12 @@
 package com.example.reico_000.prescriptionreadernfc;
 
 import android.accounts.Account;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DownloadManager;
+import android.app.Fragment;
+import android.app.FragmentManager;
 import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
@@ -16,6 +19,9 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.v4.app.FragmentActivity;
+import android.support.v7.app.ActionBarActivity;
+import android.text.InputType;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -23,6 +29,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.PopupMenu;
@@ -62,7 +69,7 @@ public class MedicationListAdapter extends BaseAdapter implements DataTransferIn
     private String filePath;
     DataTransferInterface dtInterface;
 
-    private static final String siteName = "http://www.onco-informatics.com/medadherence/";
+    private static final String siteName = "http://www.onco-informatics.com/medfc/";
 
     //Dialog in other avtivity
     private AlertDialog stopMedicationDialog = null;
@@ -126,6 +133,8 @@ public class MedicationListAdapter extends BaseAdapter implements DataTransferIn
                     .findViewById(R.id.List_TotalDosage);
             TextView consumptionTimeView = (TextView) convertView
                     .findViewById(R.id.list_ConsumptionTime);
+            TextView frequencyView = (TextView) convertView
+                    .findViewById(R.id.list_Frequency);
             ImageView imageClick = (ImageView) convertView
                     .findViewById(R.id.action_row_overflow);
 
@@ -146,6 +155,14 @@ public class MedicationListAdapter extends BaseAdapter implements DataTransferIn
             }
             if (consumptionTimeView != null) {
                 consumptionTimeView.setText(medObject.get_consumptionTime());
+            }
+            if (frequencyView != null) {
+                int frequency = medObject.get_consumptionTime().split(",").length;
+                if (frequency == 1) {
+                    frequencyView.setText(frequency + " time a day");
+                } else {
+                    frequencyView.setText(frequency + " times a day");
+                }
             }
             consumptionTimeArr = medObject.get_consumptionTime().split(", ");
             checkedTimeList = new ArrayList<String>(Arrays.asList(consumptionTimeArr));
@@ -180,12 +197,13 @@ public class MedicationListAdapter extends BaseAdapter implements DataTransferIn
                                                     MedicationObject medicationObject2 = new MedicationObject(medObject.get_id(), medObject.get_brandName(),
                                                             medObject.get_genericName(), medObject.get_dosageForm(), medObject.get_perDosage(),
                                                             medObject.get_totalDosage(), medObject.get_consumptionTime(), medObject.get_patientID(),
-                                                            medObject.get_administration(), medObject.get_remarks());
+                                                            medObject.get_administration(), medObject.get_remarks(), medObject.get_sideEffects(),
+                                                            medObject.get_prescriptionDate());
                                                     String sortedTimeString = getSortedTimeString(checkedTimeList);
                                                     medicationObject2.set_consumptionTime(sortedTimeString);
                                                     ArrayList<MedicationObject> tempList = new ArrayList<MedicationObject>
                                                             (Arrays.asList(medObject, medicationObject2));
-                                                    dtInterface.setValues(tempList);
+                                                    dtInterface.setValues("changeTiming", tempList);
 //                                                        mainList.add(medicationObject);
                                                 }
                                             });
@@ -216,20 +234,23 @@ public class MedicationListAdapter extends BaseAdapter implements DataTransferIn
                                             new AlertDialog.Builder(context)
                                                     .setTitle("Stop Taking Medication")
                                                     .setMessage("Are you sure you want to stop taking " +
-                                                            medObject.get_brandName() + "?" +
+                                                            medObject.get_genericName() + "?" +
                                                             "\nPlease consult your physician before doing so.")
                                                     .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
                                                         public void onClick(DialogInterface dialog, int which) {
                                                             ContentResolver resolver1 = context.getContentResolver();
                                                             Uri uri = MedicationContract.Medications.CONTENT_URI;
                                                             ContentValues values = new ContentValues();
+                                                            String stopRemarks = "Patient has stopped taking this medication.";
                                                             values.put(MedicationDatabaseSQLiteHandler.KEY_REMARKS,
                                                                     "Patient has stopped taking this medication.");
                                                             String selection = MedicationDatabaseSQLiteHandler.KEY_ID + " = ?";
                                                             String[] args = new String[]{String.valueOf(medObject.get_id())};
 //                                                            resolver1.update(uri, values, selection, args);
                                                             resolver1.delete(uri, selection, args);
-                                                            blockMedicationRemoteDB(medObject.get_id());
+                                                            updateRemarksRemoteDB(medObject.get_id(), stopRemarks,
+                                                                    medObject.get_sideEffects());
+//                                                            blockMedicationRemoteDB(medObject.get_id());
 //                                                                Toast.makeText(context, info_BrandName + " has been deleted.", Toast.LENGTH_LONG).show();
                                                         }
                                                     })
@@ -287,6 +308,56 @@ public class MedicationListAdapter extends BaseAdapter implements DataTransferIn
                                                 }
                                             });
                                             break;
+                                        case R.id.item_scanMedication:
+                                            medObject = (MedicationObject) getItem(position);
+                                            dtInterface.setValues("scanMedication", new ArrayList<MedicationObject>
+                                                    (Arrays.asList(medObject)));
+                                            break;
+//                                        case R.id.item_viewOrEditRemarks:
+//                                            final EditText input = new EditText(context);
+//                                            medObject = (MedicationObject) getItem(position);
+//                                            Toast.makeText(context, "Clicked postion " + position, Toast.LENGTH_SHORT).show();
+//                                            MedicationObject medicationObject2 = new MedicationObject(medObject.get_id(), medObject.get_brandName(),
+//                                                    medObject.get_genericName(), medObject.get_dosageForm(), medObject.get_perDosage(),
+//                                                    medObject.get_totalDosage(), medObject.get_consumptionTime(), medObject.get_patientID(),
+//                                                    medObject.get_administration(), medObject.get_remarks(), medObject.get_sideEffects(),
+//                                                    medObject.get_prescriptionDate());
+//
+//                                            // Specify the type of input expected;
+//                                            input.setInputType(InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+//                                            input.setSingleLine(false);
+//                                            input.setText(medicationObject2.get_sideEffects());
+//                                            new AlertDialog.Builder(context)
+//                                                .setTitle("Symptoms")
+//                                                .setMessage("Edit your reported symptoms")
+//                                                .setView(input)
+//                                                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+//                                                @Override
+//                                                public void onClick(DialogInterface dialog, int which) {
+////                                                    Toast.makeText(context, input.getText().toString(), Toast.LENGTH_SHORT).show();
+//                                                    ContentResolver resolver1 = context.getContentResolver();
+//                                                    Uri uri = MedicationContract.Medications.CONTENT_URI;
+//                                                    ContentValues values = new ContentValues();
+//                                                    String sideEffects = input.getText().toString().trim();
+//                                                    values.put(MedicationDatabaseSQLiteHandler.KEY_SIDEEFFECTS, sideEffects);
+//                                                    String selection = MedicationDatabaseSQLiteHandler.KEY_ID + " = ?";
+//                                                    String[] args = new String[]{String.valueOf(medObject.get_id())};
+//                                                    resolver1.update(uri, values, selection, args);
+//                                                    updateRemarksRemoteDB(medObject.get_id(), medObject.get_remarks(),
+//                                                            sideEffects);
+////                                                    resolver1.delete(uri, selection, args);
+////                                                    blockMedicationRemoteDB(medObject.get_id());
+//
+//                                                }
+//                                                })
+//                                                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+//                                                @Override
+//                                                public void onClick(DialogInterface dialog, int which) {
+//                                                    dialog.cancel();
+//                                                }
+//                                                })
+//                                                .show();
+//                                            break;
                                         default:
                                             break;
                                     }
@@ -362,15 +433,23 @@ public class MedicationListAdapter extends BaseAdapter implements DataTransferIn
     /**
      * Update consumption details on remote medication DB
      * */
-    private void blockMedicationRemoteDB(final int med_id) {
+    private void updateRemarksRemoteDB(final int med_id, final String remarks, final String sideEffects) {
         // Pass the settings flags by inserting them in a bundle
         Bundle settingsBundle = new Bundle();
         settingsBundle.putBoolean(
                 ContentResolver.SYNC_EXTRAS_MANUAL, true);
         settingsBundle.putBoolean(
                 ContentResolver.SYNC_EXTRAS_EXPEDITED, true);
-        settingsBundle.putString("functions", "blockMedication");
+        settingsBundle.putString("functions", "updateRemarks");
         settingsBundle.putInt("med_id", med_id);
+        String combinedRemarks = "";
+        if (sideEffects.equals("")) {
+            combinedRemarks = remarks.trim();
+        } else {
+            combinedRemarks = sideEffects.trim() + ". " + remarks.trim();
+        }
+
+        settingsBundle.putString("remarks", combinedRemarks.trim());
         /*
          * Request the sync for the default account, authority, and
          * manual sync settings
@@ -430,6 +509,13 @@ public class MedicationListAdapter extends BaseAdapter implements DataTransferIn
 
     @Override
     public void setValues(ArrayList<?> al) {
+        checkedTimeList.remove((String)al.get(0));
+        checkedTimeList.add((String) al.get(1));
+        consumptionTimeAdapter.notifyDataSetChanged();
+    }
+
+    @Override
+    public void setValues(String operation, ArrayList<?> al) {
         checkedTimeList.remove((String)al.get(0));
         checkedTimeList.add((String) al.get(1));
         consumptionTimeAdapter.notifyDataSetChanged();

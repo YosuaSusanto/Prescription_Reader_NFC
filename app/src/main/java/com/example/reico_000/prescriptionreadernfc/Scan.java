@@ -6,6 +6,8 @@ import android.os.Bundle;
 import android.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -31,6 +33,7 @@ public class Scan extends Fragment implements View.OnClickListener {
     // TODO: Rename and change types of parameters
     private String mParam1;
     private String mParam2;
+    private MainActivity mainAct;
 
     private TextView brandNameTextView;
     private TextView genericNameTextView;
@@ -38,9 +41,10 @@ public class Scan extends Fragment implements View.OnClickListener {
     private TextView perDosageTextView;
     private TextView totalDosageTextView;
     private TextView consumptionTimeTextView;
+//    private TextView frequencyTextView;
 
     private Button consumeButton;
-    private Button resetButton;
+//    private Button resetButton;
     Communicator comm;
     private Inventory.OnFragmentInteractionListener mListener;
 
@@ -78,7 +82,7 @@ public class Scan extends Fragment implements View.OnClickListener {
             Log.d("debug","arguments is null");
 
         }
-
+        setHasOptionsMenu(true);
     }
 
     @Override
@@ -92,13 +96,14 @@ public class Scan extends Fragment implements View.OnClickListener {
         perDosageTextView = (TextView) view.findViewById(R.id.scan_PerDosage);
         totalDosageTextView = (TextView) view.findViewById(R.id.scan_TotalDosage);
         consumptionTimeTextView = (TextView) view.findViewById(R.id.scan_ConsumptionTime);
+//        frequencyTextView = (TextView) view.findViewById(R.id.scan_frequency);
 
         consumeButton = (Button) view.findViewById(R.id.consumebutton);
-        resetButton = (Button) view.findViewById(R.id.resetbutton);
+//        resetButton = (Button) view.findViewById(R.id.resetbutton);
 
         consumeButton.setOnClickListener(this);
-        resetButton.setOnClickListener(this);
-
+//        resetButton.setOnClickListener(this);
+        ((MainActivity)getActivity()).updateScanFragment();
         return view;
     }
 
@@ -110,8 +115,16 @@ public class Scan extends Fragment implements View.OnClickListener {
     }
 
     @Override
+    public void onPrepareOptionsMenu(Menu menu) {
+        menu.findItem(R.id.action_legends).setVisible(false);
+        menu.findItem(R.id.action_report).setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_NEVER);
+        super.onPrepareOptionsMenu(menu);
+    }
+
+    @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);
+
         try {
             mListener = (Inventory.OnFragmentInteractionListener) activity;
         } catch (ClassCastException e) {
@@ -137,9 +150,10 @@ public class Scan extends Fragment implements View.OnClickListener {
             Log.d("Scan - Consume", "Consume Function In");
             comm.respondConsumeMed();
 
-        } else if (id ==R.id.resetbutton) {
-
         }
+//        else if (id ==R.id.resetbutton) {
+//
+//        }
         comm.respondReset();
         ClearTextViews();
     }

@@ -22,14 +22,14 @@ public class StarterService extends Service {
     /**
      * The started service starts the AlarmManager.
      */
-    @Override
-    public void onStart(Intent intent, int startid) {
-        mAccount = null;
-        if (intent.getParcelableExtra("account") != null) {
-            mAccount = intent.getParcelableExtra("account");
-        }
-        scheduleAlarm();
-    }
+//    @Override
+//    public void onStart(Intent intent, int startid) {
+//        mAccount = null;
+//        if (intent.getParcelableExtra("account") != null) {
+//            mAccount = intent.getParcelableExtra("account");
+//        }
+//        scheduleAlarm();
+//    }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startid) {
@@ -132,7 +132,7 @@ public class StarterService extends Service {
             ALARM4.set(AlarmManager.RTC_WAKEUP, sdl4, pi4);
         }
 
-        Toast.makeText(this, "Prescription Reader\nAlarm Started!", Toast.LENGTH_LONG).show();
+//        Toast.makeText(this, "Prescription Reader\nAlarm Started!", Toast.LENGTH_LONG).show();
         Log.d(TAG, "onStart");
 
     }

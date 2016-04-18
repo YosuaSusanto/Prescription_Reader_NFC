@@ -1,22 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
         android:id="@+id/item_changeReminderTiming"
-        android:showAsAction="ifRoom|withText"
+        app:showAsAction="ifRoom|withText"
         android:title="@string/action_changeReminderTiming"
         android:visible="true"/>
 
     <item
         android:id="@+id/item_stopTakingMedicine"
-        android:showAsAction="ifRoom|withText"
+        app:showAsAction="ifRoom|withText"
         android:title="@string/action_stopTakingMedicine"
         android:visible="true"/>
 
     <item
         android:id="@+id/item_showMoreInfo"
-        android:showAsAction="ifRoom|withText"
+        app:showAsAction="ifRoom|withText"
         android:title="@string/action_showMoreInfo"
         android:visible="true"/>
+
+    <item
+        android:id="@+id/item_scanMedication"
+        app:showAsAction="ifRoom|withText"
+        android:title="@string/action_scanMedication"
+        android:visible="true"/>
+
+    <!--<item-->
+        <!--android:id="@+id/item_viewOrEditRemarks"-->
+        <!--app:showAsAction="ifRoom|withText"-->
+        <!--android:title="@string/action_viewOrEditRemarks"-->
+        <!--android:visible="true"/>-->
 
 </menu>

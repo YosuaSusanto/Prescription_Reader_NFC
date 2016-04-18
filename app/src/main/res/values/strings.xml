@@ -1,11 +1,14 @@
 <resources>
-    <string name="app_name">Prescription Reader NFC</string>
+    <string name="app_name">MedFC</string>
     <string name="account_type">com.example.reico_000.prescriptionreadernfc.account</string>
     <string name="provider_authority">com.example.reico_000.prescriptionreadernfc.provider</string>
+    <string name="accept">Accept</string>
+    <string name="decline">Decline</string>
 
     <string name="title_section1">Scan Medications</string>
     <string name="title_section2">Medication List</string>
-    <string name="title_section3">Monitoring</string>
+    <string name="title_section3">Prescription Date List</string>
+    <string name="title_section4">Reported Symptoms List</string>
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
@@ -13,6 +16,8 @@
     <string name="action_example">Example action</string>
 
     <string name="action_settings">Settings</string>
+    <string name="action_legends">Legends</string>
+    <string name="action_report">Report Symptoms</string>
 
     <string name="action_logout">Logout</string>
     <string name="action_scanItem1">Scan Item 1</string>
@@ -21,21 +26,153 @@
     <string name="action_showNotification">Show Notification</string>
     <string name="action_eraseTagData">Erase Tag Data</string>
     <string name="action_loadStubConsumption">Load Stub Consumption</string>
+    <string name="action_termsAndConds">Terms And Conditions</string>
     <string name="action_getConsumption1">Get Consumption 1</string>
     <string name="action_getConsumption2">Get Consumption 2</string>
     <string name="action_changeReminderTiming">Change Reminder Timing</string>
     <string name="action_stopTakingMedicine">Stop Taking Medication</string>
     <string name="action_showMoreInfo">Show More Info</string>
+    <string name="action_scanMedication">Scan Medication</string>
+    <string name="action_viewOrEditRemarks">View/Edit Remarks</string>
 
+    <!-- LOGIN and REGISTER -->
+    <string name="hint_email">Email</string>
+    <string name="hint_password">Password</string>
+    <string name="hint_name">Name</string>
+    <string name="btn_login">LOGIN</string>
+    <string name="btn_register">REGISTER</string>
+    <string name="btn_link_to_register">Not a member? Sign up now.</string>
+    <string name="btn_link_to_login">Already registred! Login Me.</string>
+    <string name="welcome">Welcome</string>
+    <string name="btn_logout">LOGOUT</string>
+    <string name="name">Fullname</string>
+
+    <string name="termsAndConds">&lt;b>General Information&lt;/b>
+&lt;br>The MedFC app project is a research collaboration between the Departments of Pharmacy and
+Electrical &amp; Computer Engineering, National University of Singapore. Please visit the
+‘About Us’ section on the &lt;a href="https://www.onco-informatics.com/medfc/index.php">
+MedFC website&lt;/a> for details of the research team.
+
+&lt;br>&lt;br>By using this product, you acknowledge the acceptance of the following terms
+and conditions, including the restrictions, disclaimers and limitations. You agree
+that we are not responsible for the results of your decisions resulting from the
+use of the product. This includes, but is not limited to, your choice of whether to
+seek or not to seek professional medical care, specific medical treatments and/or
+drug therapy.
+
+&lt;br>&lt;br>&lt;b>About MedFC app&lt;/b>
+&lt;br>MedFC is a smartphone app intended for patients with chronic medical
+conditions and/or their caregivers. The purpose of the app is to help patients
+manage their medications easily through monitoring of their medication
+adherence patterns and clinical outcomes. The app provides a variety of
+functionalities including medication reminders, source of medication
+information, recording of symptoms related to medication side effects or disease
+condition, and a means for tracking medication taking patterns. This app also
+allows healthcare providers to monitor their patients’ medication adherence
+patterns through a clinician interface.
+
+&lt;br>&lt;br>The MedFC app is intended to complement patients’ current methods of
+monitoring medication adherence. Patients should not and must not solely rely
+on the app for taking their medications on time. In cases where any hardware or
+software on the user’s device prevents the app from operating as intended or is
+broken, or if the power is turned off, or if the app is not enabled, MedFC may not
+function as intended. As a patient user, you acknowledge that MedFC’s reminder
+system depends on the preferences that you make in the settings of the app
+and/or your smartphone, and information that you enter, if you choose to change
+the details of your medication schedule that is programed by your health
+professional.
+
+&lt;br>&lt;br>The contents of the MedFC app are not intended to be a substitute for
+professional medical advice, diagnosis or treatment. Patients should always seek
+the advice of their physician, pharmacist or other qualified health provider with
+any questions they may have regarding their medications or medical condition.
+Every effort has been made to ensure that the app contains accurate and up-to-
+date medication information, but no guarantee is made to that effect. We are not
+responsible for any misinterpretation of medication information by the user.
+Additionally, the medication information contained herein may also be time
+sensitive. Reliance on any information accessed through the MedFC app is solely
+at the user’s own risk.
+
+&lt;br>&lt;br>&lt;b>About the MedFC application&lt;/b>
+&lt;br>The MedFC application has three components: (1) clinician interface, (2)
+patient interface, (3) caregiver interface.
+
+&lt;br>&lt;br>The clinician interface is intended for clinicians who are involved in the supply of
+medicines and provision of pharmaceutical care to patients. The interface
+enables the clinician to enter patient details including their names, the name and
+dosages of their medications and other medication-related information.
+This information will be utilized to encode a Near Field Communication (NFC)
+sticker that will be part of the labelling on the patient’s medication package. The
+clinician can also monitor the patient’s medication adherence patterns and
+reported symptoms. Information required during signup for access to this application includes,
+the user’s full name, NRIC/FIN, email address, and login password. The collected information is
+stored for as long as the user has access to the interface and can only be accessed
+by the MedFC Team, for the purpose of analysing user statistics. No information
+will be revealed to any third party for advertising or other purposes except those
+cases where we are obliged to reveal the information by a court order.
+
+&lt;br>&lt;br>The patient web interface is designed as a convenient way for patients to
+monitor their medication adherence levels. The caregiver interface enables
+caregivers to track the medication adherence patterns of the patient they care
+for. The patient has to endorse the caregiver before access is granted,
+unless in exceptional cases.
+
+&lt;br>&lt;br>&lt;b>Privacy Policy&lt;/b>
+&lt;br>Any personally identifiable information collected from the usage of the app
+remains highly confidential and will not be used for any other purpose besides
+facilitating the usage of the app. The app will access patient’s personal
+information entered in the clinician’s web interface. Personal information
+collected includes the user’s full name, and NRIC number. The details of the
+medications that the patient takes are also accessed. The app also collects
+symptom information that patients enter. The collected information is stored in
+the MedFC database for as long as the user has access to the app and can only be
+accessed by his/her healthcare professional, and the MedFC Team for the
+purpose of analysing user statistics. No information will be revealed to any third
+party for advertising or other purposes except those cases where we are obliged
+to reveal the information by a court order.
+
+&lt;br>&lt;br>&lt;b>Advertising&lt;/b>
+&lt;br>The MedFC app is a non-commercial app developed by a collaboration between
+the Departments of Pharmacy and Electrical &amp; Computer Engineering, National
+University of Singapore. The app is not sponsored by any other organisation and
+is not funded by advertising. The MedFC team does not have any direct conflict of
+interest with any commercial organiszation or organiszations that may bias the
+information provided by the app.
+
+&lt;br>&lt;br>The MedFC website does not intentionally use cookies. Cookies can be disabled
+from the settings menu of your Internet browser. (&lt;a href="http://windows.microsoft.com/en-US/windows-vista/Block-or-allow-cookies">
+Internet Explorer&lt;/a>, &lt;a href="https://support.mozilla.org/en-US/kb/enable-and-disable-cookies-website-preferences?redirectlocale=en-US&amp;redirectslug=Enabling+and+disabling+cookies">
+Firefox&lt;/a>, &lt;a href="http://support.apple.com/kb/HT1677">Safari&lt;/a>, &lt;a href="http://support.google.com/chrome/bin/answer.py?hl=en&amp;answer=95647">
+Google Chrome&lt;/a>)
+
+&lt;br>&lt;br>&lt;b>User Risks&lt;/b>
+&lt;br>The absence of a warning for a given medication or combination of medications
+does not indicate that the medication or medication combination is safe, effective
+or appropriate for any given patient and should not be interpreted as such.
+By using the MedFC app and clinician interface, the user acknowledges that
+he/she has been made aware of the disclaimers in this agreement, including
+those which state that the app is not a substitute for professional advice, and that
+the MedFC team and their institutions make no warranty on the accuracy,
+validity, completeness or availability of the information cited in this app.
+
+&lt;br>&lt;br>&lt;b>Contact us:&lt;/b>
+&lt;br>Please visit the ‘Contact Us’ section on the &lt;a href="https://www.onco-informatics.com/medfc/index.php#contactus">
+MedFC website&lt;/a>.</string>
+
+    <string name="legends_text">&lt;b>Per Dosage&lt;/b>&lt;br>Amount of medicine that you need to take every time
+&lt;br>&lt;b>Balance&lt;/b>&lt;br>The amount of medicine that you have left
+&lt;br>&lt;b>Consumption Time&lt;/b>&lt;br>The time when you are required to take your medication </string>
 <!-- TODO: Remove or change this placeholder text -->
     <string name="patient_name">Patient Name:</string>
     <string name="brand_name">Brand Name:</string>
     <string name="generic_name">Generic Name:</string>
     <string name="dosage_form">Dosage Form:</string>
     <string name="per_dosage">Per Dosage:</string>
-    <string name="total_dosage">Total Dosage:</string>
+    <string name="total_dosage">Balance:</string>
     <string name="consumption_time">Consumption Time:</string>
+    <string name="frequency">Frequency:</string>
+    <string name="prescription_date">Prescription Date:</string>
     <string name="consume">Consume\nMedications</string>
     <string name="reset">Reset\nFields</string>
-    <string name="save">Save\nMedication</string>
+    <string name="save">Save&lt;br>Medication</string>
 </resources>

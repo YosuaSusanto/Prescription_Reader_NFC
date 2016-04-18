@@ -18,6 +18,8 @@ public class MedicationObject {
     String _consumptionTime = "";
     String _administration = "";
     String _remarks = "";
+    String _sideEffects = "";
+    String _prescriptionDate = "";
 
     public MedicationObject(){
     }
@@ -29,7 +31,8 @@ public class MedicationObject {
 
     public MedicationObject(int id, String brandName, String genericName, String dosageForm,
                             String perDosage, String totalDosage, String consumptionTime,
-                            String patientID, String administration, String remarks){
+                            String patientID, String administration, String remarks,
+                            String sideEffects, String prescriptionDate){
         this._ID = id;
         this._brandName = brandName;
         this._genericName = genericName;
@@ -40,6 +43,8 @@ public class MedicationObject {
         this._patientID = patientID;
         this._administration = administration;
         this._remarks = remarks;
+        this._sideEffects = sideEffects;
+        this._prescriptionDate = prescriptionDate;
     }
 
     public int get_id(){
@@ -82,8 +87,20 @@ public class MedicationObject {
         return this._remarks;
     }
 
+    public String get_sideEffects(){
+        return this._sideEffects;
+    }
+
+    public String get_prescriptionDate(){
+        return this._prescriptionDate;
+    }
+
     public void set_consumptionTime(String newConsumptionTime){
         this._consumptionTime = newConsumptionTime;
+    }
+
+    public void set_sideEffects(String sideEffects){
+        this._sideEffects = sideEffects;
     }
 
     public void set_remarksBlock(){
@@ -109,6 +126,8 @@ public class MedicationObject {
         values.put(MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID, _patientID);
         values.put(MedicationDatabaseSQLiteHandler.KEY_ADMINISTRATION, _administration);
         values.put(MedicationDatabaseSQLiteHandler.KEY_REMARKS, _remarks);
+        values.put(MedicationDatabaseSQLiteHandler.KEY_SIDEEFFECTS, _sideEffects);
+        values.put(MedicationDatabaseSQLiteHandler.KEY_PRESCRIPTIONDATE, _prescriptionDate);
         return values;
     }
 
@@ -124,7 +143,10 @@ public class MedicationObject {
         String patientID = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID));
         String administration = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_ADMINISTRATION));
         String remarks = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_REMARKS));
+        String sideEffects = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_SIDEEFFECTS));
+        String prescriptionDate = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_PRESCRIPTIONDATE));
 
-        return new MedicationObject(id, brandName, genericName, dosageForm, perDosage, totalDosage, consumptionTime, patientID, administration, remarks);
+        return new MedicationObject(id, brandName, genericName, dosageForm, perDosage, totalDosage,
+                consumptionTime, patientID, administration, remarks, sideEffects, prescriptionDate);
     }
 }

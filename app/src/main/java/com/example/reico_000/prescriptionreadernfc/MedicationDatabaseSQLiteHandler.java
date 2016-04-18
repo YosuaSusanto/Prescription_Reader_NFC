@@ -61,9 +61,12 @@ public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
     public static final String KEY_PATIENT_ID = "PatientID";
     public static final String KEY_ADMINISTRATION = "Administration";
     public static final String KEY_REMARKS = "Remarks";
+    public static final String KEY_SIDEEFFECTS = "SideEffects";
+    public static final String KEY_PRESCRIPTIONDATE = "PrescriptionDate";
     public static final String[] ALL_MED_KEYS = new String[] {KEY_ID, KEY_BRAND_NAME,
             KEY_GENERIC_NAME, KEY_DOSAGE_FORM, KEY_PER_DOSAGE, KEY_TOTAL_DOSAGE,
-            KEY_CONSUMPTION_TIME, KEY_PATIENT_ID, KEY_ADMINISTRATION, KEY_REMARKS};
+            KEY_CONSUMPTION_TIME, KEY_PATIENT_ID, KEY_ADMINISTRATION, KEY_REMARKS,
+            KEY_SIDEEFFECTS, KEY_PRESCRIPTIONDATE};
 
     // Consumptions table column names
     public static final String KEY_MEDICATION_ID = "MedicationID";
@@ -86,7 +89,8 @@ public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
         String CREATE_MEDICATION_TABLE = "CREATE TABLE " + TABLE_MEDICATIONS + "(" + KEY_ID + " INTEGER PRIMARY KEY, " +
                 KEY_BRAND_NAME + " TEXT, " + KEY_GENERIC_NAME + " TEXT, " + KEY_DOSAGE_FORM + " TEXT, " + KEY_PER_DOSAGE + " TEXT, " +
                 KEY_TOTAL_DOSAGE + " TEXT, " + KEY_CONSUMPTION_TIME + " TEXT, " + KEY_PATIENT_ID + " TEXT, " +
-                KEY_ADMINISTRATION + " TEXT, " + KEY_REMARKS + " TEXT )";
+                KEY_ADMINISTRATION + " TEXT, " + KEY_REMARKS + " TEXT, " + KEY_SIDEEFFECTS + " TEXT, " +
+                KEY_PRESCRIPTIONDATE + " TEXT )";
         String CREATE_CONSUMPTION_TABLE = "CREATE TABLE " + TABLE_CONSUMPTIONS + "(" + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 KEY_MEDICATION_ID + " INTEGER," + KEY_CONSUMED_AT + " TEXT, " + KEY_IS_TAKEN + " TEXT, " + KEY_REMAINING_DOSAGE +" TEXT )";
 
@@ -115,6 +119,9 @@ public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
         values.put(KEY_CONSUMPTION_TIME, medicationObject.get_consumptionTime()); // Time of Consumption
         values.put(KEY_PATIENT_ID, medicationObject.get_patientID()); // Patient's ID
         values.put(KEY_ADMINISTRATION, medicationObject.get_administration()); // Administration Info
+        values.put(KEY_REMARKS, medicationObject.get_remarks()); // Remarks
+        values.put(KEY_SIDEEFFECTS, medicationObject.get_sideEffects()); // Reported side effects
+        values.put(KEY_PRESCRIPTIONDATE, medicationObject.get_prescriptionDate()); // Reported side effects
 
         // Inserting Row
         db.insert(TABLE_MEDICATIONS, null, values);
@@ -136,7 +143,8 @@ public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
                 MedicationObject medicationObject= new MedicationObject(cursor.getInt(0),
                         cursor.getString(1),cursor.getString(2),cursor.getString(3),
                         cursor.getString(4), cursor.getString(5), cursor.getString(6),
-                        cursor.getString(7), cursor.getColumnName(8), cursor.getColumnName(9));
+                        cursor.getString(7), cursor.getString(8), cursor.getString(9),
+                        cursor.getString(10), cursor.getString(11));
 
                 //Do I need to put in UID?
 //                medicationObject.set_ID(Integer.parseInt(cursor.getString(0)));
@@ -237,7 +245,7 @@ public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
     }
 
     // Deleting single MedObject
-    public void deleteMedicationObject(Long MedId) {
+    public void deleteMedicationObject(int MedId) {
         SQLiteDatabase db = this.getWritableDatabase();
         db.delete(TABLE_MEDICATIONS, KEY_ID + " = ?",
                 new String[]{String.valueOf(MedId)});
@@ -310,5 +318,27 @@ public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
         }
         cursor.close();
         return true;
+    }
+
+    public void deleteNonExistingMedication(List<Integer> onlineIdList, String patientId) {
+        Log.d("deleteMed", "Deleting nonexistent medication");
+        SQLiteDatabase db = this.getWritableDatabase();
+        String Query = "Select * from " + MedicationDatabaseSQLiteHandler.TABLE_MEDICATIONS + " where "
+                + MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID + " = '" + patientId + "'";
+        Cursor cursor = db.rawQuery(Query, null);
+        if(cursor.getCount() <= 0){
+            cursor.close();
+        } else {
+            while (cursor.moveToNext()) {
+                Integer medId = cursor.getInt(0);
+                Log.d("deleteMed", "current medId: " + medId);
+
+                if (!onlineIdList.contains(medId)) {
+                    deleteMedicationObject(medId);
+                }
+            }
+//            while (cursor.moveToNext());
+            cursor.close();
+        }
     }
 }

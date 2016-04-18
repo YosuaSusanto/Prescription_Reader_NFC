@@ -6,7 +6,7 @@ android {
 
     defaultConfig {
         applicationId "com.example.reico_000.prescriptionreadernfc"
-        minSdkVersion 16
+        minSdkVersion 17
         targetSdkVersion 19
         versionCode 1
         versionName "1.0"
@@ -17,11 +17,16 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    lintOptions {
+        abortOnError false
+        disable 'InvalidPackage'
+    }
 }
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile 'com.android.support:support-v4:19.1.0'
+    compile "com.android.support:appcompat-v7:19.0.+"
     compile files('src/main/res/raw/jtds1_3_0.jar')
     compile project(':volley')
 }

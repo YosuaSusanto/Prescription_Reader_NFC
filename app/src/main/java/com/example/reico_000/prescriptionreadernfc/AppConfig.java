@@ -7,37 +7,40 @@ package com.example.reico_000.prescriptionreadernfc;
  */
 
 public class AppConfig {
-    private static String NGROK_URL = "http://d93597b8.ngrok.io/android_login_api/";
+    private static String NGROK_URL = "https://d93597b8.ngrok.io/android_login_api/";
     // Server user login url
-    public static String URL_LOGIN = NGROK_URL + "login.php";
+    public static String URL_LOGIN = "https://onco-informatics.com/medfc/android_login_api/login.php";
 
     // Server user register url
-    public static String URL_REGISTER = NGROK_URL + "register.php";
+    public static String URL_REGISTER = "https://onco-informatics.com/medfc/android_login_api/register.php";
 
     // Server populateDB url
-    public static String URL_POPULATE_DB = "http://pohhuanyu.com/android_login_api/populateDB.php";
+    public static String URL_POPULATE_DB = "https://onco-informatics.com/medfc/android_login_api/populateDB.php";
 
     // Server getNRIC url
-    public static String URL_GET_NRIC = "http://pohhuanyu.com/android_login_api/getNRIC.php";
+    public static String URL_GET_NRIC = "https://onco-informatics.com/medfc/android_login_api/getNRIC.php";
 
     // Server getPDFFilePath url
-    public static String URL_GET_PDF_FILE_PATH = "http://pohhuanyu.com/android_login_api/getPDFFilePath.php";
+    public static String URL_GET_PDF_FILE_PATH = "https://onco-informatics.com/medfc/android_login_api/getPDFFilePath.php";
 
     // Server blockMedication url
-    public static String URL_BLOCK_MEDICATION = "http://pohhuanyu.com/android_login_api/blockMedication.php";
+    public static String URL_BLOCK_MEDICATION = "https://onco-informatics.com/medfc/android_login_api/blockMedication.php";
+
+    // updateRemarks url
+    public static String URL_UPDATE_REMARKS = "https://onco-informatics.com/medfc/android_login_api/updateRemarks.php";
 
     // Server updateConsumptionTime url
-    public static String URL_UPDATE_CONSUMPTION_TIME = "http://pohhuanyu.com/android_login_api/updateConsumptionTime.php";
+    public static String URL_UPDATE_CONSUMPTION_TIME = "https://onco-informatics.com/medfc/android_login_api/updateConsumptionTime.php";
 
     // Server updateUntakenConsumptionTime url
-    public static String URL_UPDATE_UNTAKEN_CONSUMPTION_TIME = "http://pohhuanyu.com/android_login_api/updateUntakenConsumptionTime.php";
+    public static String URL_UPDATE_UNTAKEN_CONSUMPTION_TIME = "https://onco-informatics.com/medfc/android_login_api/updateUntakenConsumptionTime.php";
 
     // Server updateDosage url
-    public static String URL_UPDATE_DOSAGE = "http://pohhuanyu.com/android_login_api/updateDosage.php";
+    public static String URL_UPDATE_DOSAGE = "https://onco-informatics.com/medfc/android_login_api/updateDosage.php";
 
     // Server insertConsumption url
-    public static String URL_INSERT_CONSUMPTION = "http://pohhuanyu.com/android_login_api/insertConsumption.php";
+    public static String URL_INSERT_CONSUMPTION = "https://onco-informatics.com/medfc/android_login_api/insertConsumption.php";
 
     // Server updateConsumption url
-    public static String URL_UPDATE_CONSUMPTION = "http://pohhuanyu.com/android_login_api/updateConsumption.php";
+    public static String URL_UPDATE_CONSUMPTION = "https://onco-informatics.com/medfc/android_login_api/updateConsumption.php";
 }
