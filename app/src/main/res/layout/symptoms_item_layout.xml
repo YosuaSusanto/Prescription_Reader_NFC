@@ -9,10 +9,9 @@
         android:layout_weight="1"
         android:textAppearance="?android:attr/textAppearanceMedium"
         android:text="Medium Text"
-        android:id="@+id/list_GenericName"
+        android:id="@+id/list_Symptoms"
         android:layout_gravity="center_horizontal|top"
-        android:textStyle="bold"
-        android:textColor="#ffbd0200"
+        android:textColor="@color/black"
         android:layout_marginLeft="0dp"
         android:layout_marginStart="0dp" />
 
@@ -28,7 +27,7 @@
         android:layout_height="wrap_content"
         android:textAppearance="?android:attr/textAppearanceMedium"
         android:text="31st May 2016"
-        android:id="@+id/list_PrescriptionDate"
+        android:id="@+id/list_ReportedOn"
         android:layout_gravity="right|top"
         android:textColor="#ff0038bd" />
 

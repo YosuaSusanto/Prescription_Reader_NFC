@@ -33,7 +33,7 @@ public class ReportSymptoms extends Fragment {
     private String mParam2;
 
     private OnFragmentInteractionListener mListener;
-    private ListView ReportSymptomsList;
+    private ListView reportSymptomsList;
     Communicator comm;
     /**
      * Use this factory method to create a new instance of
@@ -73,7 +73,7 @@ public class ReportSymptoms extends Fragment {
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_report_list, container, false);
         // Inflate the layout for this fragment
-        ReportSymptomsList = (ListView) view.findViewById(R.id.reportList);
+        reportSymptomsList = (ListView) view.findViewById(R.id.reportList);
 
         return view;
     }
@@ -132,15 +132,16 @@ public class ReportSymptoms extends Fragment {
     }
 
     //    public void populateList(CursorAdapter cursorAdapter){
-    public void populateList(PrescriptionDateListAdapter prescriptionDateListAdapter){
+    public void populateList(SymptomsAdapter symptomsAdapter){
         Log.d("Test", "setAdapter entered");
 
+        reportSymptomsList.setAdapter(symptomsAdapter);
 //        ReportSymptomsList.setAdapter(reportSymptomsListAdapter);
     }
 
     private void registerListClickCallback() {
         Log.d("Item click", "Entered Function");
-        ReportSymptomsList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        reportSymptomsList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View viewClicked,
                                     int position, long idInDB) {
@@ -150,7 +151,7 @@ public class ReportSymptoms extends Fragment {
                 //comm.test();
             }
         });
-        ReportSymptomsList.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+        reportSymptomsList.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View viewClicked,
                                            int position, long idInDB) {

@@ -14,8 +14,11 @@ public class AppConfig {
     // Server user register url
     public static String URL_REGISTER = "https://onco-informatics.com/medfc/android_login_api/register.php";
 
+    // Server populateMedDB url
+    public static String URL_POPULATE_DB = "https://onco-informatics.com/medfc/android_login_api/populateMedDB.php";
+
     // Server populateDB url
-    public static String URL_POPULATE_DB = "https://onco-informatics.com/medfc/android_login_api/populateDB.php";
+    public static String URL_POPULATE_SYMPTOMS_DB = "https://onco-informatics.com/medfc/android_login_api/populateSymptomsDB.php";
 
     // Server getNRIC url
     public static String URL_GET_NRIC = "https://onco-informatics.com/medfc/android_login_api/getNRIC.php";
@@ -43,4 +46,7 @@ public class AppConfig {
 
     // Server updateConsumption url
     public static String URL_UPDATE_CONSUMPTION = "https://onco-informatics.com/medfc/android_login_api/updateConsumption.php";
+
+    // Server insertSymptoms url
+    public static String URL_INSERT_SYMPTOMS = "https://onco-informatics.com/medfc/android_login_api/insertSymptoms.php";
 }

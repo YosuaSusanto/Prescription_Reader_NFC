@@ -62,6 +62,7 @@ public class MedicationListAdapter extends BaseAdapter implements DataTransferIn
     private ArrayList<MedicationObject> mainList;
     private Context context;
     private Account account;
+    private String patientID;
     private ArrayList<String> checkedTimeList;
     private String[] consumptionTimeArr;
     private MedicationObject medObject;
@@ -69,17 +70,18 @@ public class MedicationListAdapter extends BaseAdapter implements DataTransferIn
     private String filePath;
     DataTransferInterface dtInterface;
 
-    private static final String siteName = "http://www.onco-informatics.com/medfc/";
+    private static final String siteName = "https://www.onco-informatics.com/medfc/";
 
     //Dialog in other avtivity
     private AlertDialog stopMedicationDialog = null;
 
-    public MedicationListAdapter(Context applicationContext, Account account,
+    public MedicationListAdapter(Context applicationContext, Account account, String patientID,
                                  List<MedicationObject> medList, DataTransferInterface dtInterface) {
 
         super();
-        this.account = account;
         this.context = applicationContext;
+        this.account = account;
+        this.patientID = patientID;
         this.dtInterface = dtInterface;
         this.mainList = new ArrayList<MedicationObject>(medList);
     }
@@ -145,13 +147,13 @@ public class MedicationListAdapter extends BaseAdapter implements DataTransferIn
                 genericNameView.setText(medObject.get_genericName());
             }
             if (perDosageView != null) {
-                perDosageView.setText(medObject.get_perDosage());
+                perDosageView.setText(medObject.get_perDosage() + " " + medObject.get_unit());
             }
             if (dosageFormView != null) {
                 dosageFormView.setText(medObject.get_dosageForm());
             }
             if (totalDosageView != null) {
-                totalDosageView.setText(medObject.get_totalDosage());
+                totalDosageView.setText(medObject.get_totalDosage() + " " + medObject.get_unit());
             }
             if (consumptionTimeView != null) {
                 consumptionTimeView.setText(medObject.get_consumptionTime());
@@ -195,16 +197,20 @@ public class MedicationListAdapter extends BaseAdapter implements DataTransferIn
                                                     medObject = (MedicationObject) getItem(position);
 
                                                     MedicationObject medicationObject2 = new MedicationObject(medObject.get_id(), medObject.get_brandName(),
-                                                            medObject.get_genericName(), medObject.get_dosageForm(), medObject.get_perDosage(),
+                                                            medObject.get_genericName(), medObject.get_dosageForm(), medObject.get_unit(), medObject.get_perDosage(),
                                                             medObject.get_totalDosage(), medObject.get_consumptionTime(), medObject.get_patientID(),
-                                                            medObject.get_administration(), medObject.get_remarks(), medObject.get_sideEffects(),
-                                                            medObject.get_prescriptionDate());
+                                                            medObject.get_administration(), medObject.get_remarks(), medObject.get_prescriptionDate(),
+                                                            medObject.get_status());
                                                     String sortedTimeString = getSortedTimeString(checkedTimeList);
                                                     medicationObject2.set_consumptionTime(sortedTimeString);
                                                     ArrayList<MedicationObject> tempList = new ArrayList<MedicationObject>
                                                             (Arrays.asList(medObject, medicationObject2));
                                                     dtInterface.setValues("changeTiming", tempList);
 //                                                        mainList.add(medicationObject);
+                                                    Intent intent = new Intent(context, StarterService.class);
+                                                    intent.putExtra("account", account);
+                                                    intent.putExtra("patientID", patientID);
+                                                    context.startService(intent);
                                                 }
                                             });
                                             LayoutInflater inflater = (LayoutInflater) context
@@ -248,8 +254,7 @@ public class MedicationListAdapter extends BaseAdapter implements DataTransferIn
                                                             String[] args = new String[]{String.valueOf(medObject.get_id())};
 //                                                            resolver1.update(uri, values, selection, args);
                                                             resolver1.delete(uri, selection, args);
-                                                            updateRemarksRemoteDB(medObject.get_id(), stopRemarks,
-                                                                    medObject.get_sideEffects());
+                                                            updateRemarksRemoteDB(medObject.get_id(), stopRemarks);
 //                                                            blockMedicationRemoteDB(medObject.get_id());
 //                                                                Toast.makeText(context, info_BrandName + " has been deleted.", Toast.LENGTH_LONG).show();
                                                         }
@@ -324,6 +329,7 @@ public class MedicationListAdapter extends BaseAdapter implements DataTransferIn
 //                                                    medObject.get_prescriptionDate());
 //
 //                                            // Specify the type of input expected;
+//                                            final EditText input = new EditText(context);
 //                                            input.setInputType(InputType.TYPE_TEXT_FLAG_MULTI_LINE);
 //                                            input.setSingleLine(false);
 //                                            input.setText(medicationObject2.get_sideEffects());
@@ -433,23 +439,18 @@ public class MedicationListAdapter extends BaseAdapter implements DataTransferIn
     /**
      * Update consumption details on remote medication DB
      * */
-    private void updateRemarksRemoteDB(final int med_id, final String remarks, final String sideEffects) {
+    private void updateRemarksRemoteDB(final int med_id, final String remarks) {
         // Pass the settings flags by inserting them in a bundle
         Bundle settingsBundle = new Bundle();
         settingsBundle.putBoolean(
                 ContentResolver.SYNC_EXTRAS_MANUAL, true);
         settingsBundle.putBoolean(
                 ContentResolver.SYNC_EXTRAS_EXPEDITED, true);
-        settingsBundle.putString("functions", "updateRemarks");
+        settingsBundle.putString("functions", "blockMedication");
+//        settingsBundle.putString("functions", "updateRemarks");
         settingsBundle.putInt("med_id", med_id);
-        String combinedRemarks = "";
-        if (sideEffects.equals("")) {
-            combinedRemarks = remarks.trim();
-        } else {
-            combinedRemarks = sideEffects.trim() + ". " + remarks.trim();
-        }
-
-        settingsBundle.putString("remarks", combinedRemarks.trim());
+//
+//        settingsBundle.putString("remarks", remarks.trim());
         /*
          * Request the sync for the default account, authority, and
          * manual sync settings

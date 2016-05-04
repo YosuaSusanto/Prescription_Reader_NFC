@@ -47,6 +47,8 @@ public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
 	// Contacts table name
     public static final String TABLE_MEDICATIONS = "medicationTable";
     public static final String TABLE_CONSUMPTIONS = "consumptionTable";
+    public static final String TABLE_SYMPTOMS = "symptomsTable";
+    public static final String TABLE_PAST_MEDICATIONS = "pastMedicationTable";
 
 	// Common columns names
 	public static final String KEY_ID = "_id";
@@ -55,24 +57,33 @@ public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
     public static final String KEY_BRAND_NAME = "BrandName";
     public static final String KEY_GENERIC_NAME = "GenericName";
     public static final String KEY_DOSAGE_FORM = "DosageForm";
+    public static final String KEY_UNIT = "Unit";
     public static final String KEY_PER_DOSAGE = "PerDosage";
     public static final String KEY_TOTAL_DOSAGE = "TotalDosage";
     public static final String KEY_CONSUMPTION_TIME = "ConsumptionTime";
     public static final String KEY_PATIENT_ID = "PatientID";
     public static final String KEY_ADMINISTRATION = "Administration";
     public static final String KEY_REMARKS = "Remarks";
-    public static final String KEY_SIDEEFFECTS = "SideEffects";
     public static final String KEY_PRESCRIPTIONDATE = "PrescriptionDate";
+    public static final String KEY_STATUS = "Status";
     public static final String[] ALL_MED_KEYS = new String[] {KEY_ID, KEY_BRAND_NAME,
-            KEY_GENERIC_NAME, KEY_DOSAGE_FORM, KEY_PER_DOSAGE, KEY_TOTAL_DOSAGE,
+            KEY_GENERIC_NAME, KEY_DOSAGE_FORM, KEY_UNIT, KEY_PER_DOSAGE, KEY_TOTAL_DOSAGE,
             KEY_CONSUMPTION_TIME, KEY_PATIENT_ID, KEY_ADMINISTRATION, KEY_REMARKS,
-            KEY_SIDEEFFECTS, KEY_PRESCRIPTIONDATE};
+            KEY_PRESCRIPTIONDATE, KEY_STATUS};
 
     // Consumptions table column names
     public static final String KEY_MEDICATION_ID = "MedicationID";
     public static final String KEY_CONSUMED_AT = "ConsumedAt";
     public static final String KEY_IS_TAKEN = "IsTaken";
     public static final String KEY_REMAINING_DOSAGE = "RemainingDosage";
+
+    // Symptoms table column names
+    public static final String KEY_PATIENT_NAME = "PatientName";
+    public static final String KEY_SYMPTOMS = "Symptoms";
+    public static final String KEY_REPORTED_ON = "ReportedOn";
+
+    // Consumptions table column names
+    public static final String KEY_FINISHED_ON = "FinishedOn";
 
     // TODO: Setup your field numbers here (0 = KEY_ROWID, 1=...)
     public static final int COL_BRANDNAME = 1;
@@ -87,15 +98,22 @@ public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
 	@Override
 	public void onCreate(SQLiteDatabase db) {
         String CREATE_MEDICATION_TABLE = "CREATE TABLE " + TABLE_MEDICATIONS + "(" + KEY_ID + " INTEGER PRIMARY KEY, " +
-                KEY_BRAND_NAME + " TEXT, " + KEY_GENERIC_NAME + " TEXT, " + KEY_DOSAGE_FORM + " TEXT, " + KEY_PER_DOSAGE + " TEXT, " +
-                KEY_TOTAL_DOSAGE + " TEXT, " + KEY_CONSUMPTION_TIME + " TEXT, " + KEY_PATIENT_ID + " TEXT, " +
-                KEY_ADMINISTRATION + " TEXT, " + KEY_REMARKS + " TEXT, " + KEY_SIDEEFFECTS + " TEXT, " +
-                KEY_PRESCRIPTIONDATE + " TEXT )";
+                KEY_BRAND_NAME + " TEXT, " + KEY_GENERIC_NAME + " TEXT, " + KEY_DOSAGE_FORM + " TEXT, " +
+                KEY_PER_DOSAGE + " TEXT, " + KEY_UNIT + " TEXT, " + KEY_TOTAL_DOSAGE + " TEXT, " +
+                KEY_CONSUMPTION_TIME + " TEXT, " + KEY_PATIENT_ID + " TEXT, " + KEY_ADMINISTRATION + " TEXT, " +
+                KEY_REMARKS + " TEXT, " + KEY_PRESCRIPTIONDATE + " TEXT, " + KEY_STATUS + " TEXT )";
         String CREATE_CONSUMPTION_TABLE = "CREATE TABLE " + TABLE_CONSUMPTIONS + "(" + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 KEY_MEDICATION_ID + " INTEGER," + KEY_CONSUMED_AT + " TEXT, " + KEY_IS_TAKEN + " TEXT, " + KEY_REMAINING_DOSAGE +" TEXT )";
+        String CREATE_SYMPTOMS_TABLE = "CREATE TABLE " + TABLE_SYMPTOMS + "(" + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                KEY_PATIENT_ID + " TEXT," + KEY_PATIENT_NAME + " TEXT, " + KEY_SYMPTOMS + " TEXT, " + KEY_REPORTED_ON +" TEXT )";
+        String CREATE_PAST_MEDICATION_TABLE = "CREATE TABLE " + TABLE_PAST_MEDICATIONS + "(" + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                KEY_PATIENT_ID + " TEXT," + KEY_BRAND_NAME + " TEXT, " + KEY_GENERIC_NAME + " TEXT, " + KEY_FINISHED_ON + " TEXT, " +
+                KEY_PRESCRIPTIONDATE + " TEXT )";
 
         db.execSQL(CREATE_MEDICATION_TABLE);
         db.execSQL(CREATE_CONSUMPTION_TABLE);
+        db.execSQL(CREATE_SYMPTOMS_TABLE);
+        db.execSQL(CREATE_PAST_MEDICATION_TABLE);
 	}
 
 	@Override
@@ -103,6 +121,8 @@ public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
         // Drop older table if existed
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_MEDICATIONS);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_CONSUMPTIONS);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_SYMPTOMS);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_PAST_MEDICATIONS);
         onCreate(db);
     }
 
@@ -114,14 +134,15 @@ public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
         values.put(KEY_BRAND_NAME, medicationObject.get_brandName()); // Brand Name
         values.put(KEY_GENERIC_NAME, medicationObject.get_genericName()); // Generic Name
         values.put(KEY_DOSAGE_FORM, medicationObject.get_dosageForm()); // Dosage Form and Strength
+        values.put(KEY_UNIT, medicationObject.get_unit()); // Dosage Form and Strength
         values.put(KEY_PER_DOSAGE, medicationObject.get_perDosage()); // Pill/Tablet Per Dosage
         values.put(KEY_TOTAL_DOSAGE, medicationObject.get_totalDosage()); // Total Dosage
         values.put(KEY_CONSUMPTION_TIME, medicationObject.get_consumptionTime()); // Time of Consumption
         values.put(KEY_PATIENT_ID, medicationObject.get_patientID()); // Patient's ID
         values.put(KEY_ADMINISTRATION, medicationObject.get_administration()); // Administration Info
         values.put(KEY_REMARKS, medicationObject.get_remarks()); // Remarks
-        values.put(KEY_SIDEEFFECTS, medicationObject.get_sideEffects()); // Reported side effects
-        values.put(KEY_PRESCRIPTIONDATE, medicationObject.get_prescriptionDate()); // Reported side effects
+        values.put(KEY_PRESCRIPTIONDATE, medicationObject.get_prescriptionDate()); // Prescription date
+        values.put(KEY_STATUS, medicationObject.get_status()); // Med status
 
         // Inserting Row
         db.insert(TABLE_MEDICATIONS, null, values);
@@ -144,7 +165,7 @@ public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
                         cursor.getString(1),cursor.getString(2),cursor.getString(3),
                         cursor.getString(4), cursor.getString(5), cursor.getString(6),
                         cursor.getString(7), cursor.getString(8), cursor.getString(9),
-                        cursor.getString(10), cursor.getString(11));
+                        cursor.getString(10), cursor.getString(11), cursor.getString(12));
 
                 //Do I need to put in UID?
 //                medicationObject.set_ID(Integer.parseInt(cursor.getString(0)));
@@ -308,9 +329,28 @@ public class  MedicationDatabaseSQLiteHandler extends SQLiteOpenHelper{
     }
 
     public boolean CheckIsDataAlreadyInDBorNot(String TableName,
-                                                      String dbfield, String fieldValue) {
+                                               String dbfield, String fieldValue) {
         SQLiteDatabase db = this.getWritableDatabase();
         String Query = "Select * from " + TableName + " where " + dbfield + " = " + fieldValue;
+        Cursor cursor = db.rawQuery(Query, null);
+        if(cursor.getCount() <= 0){
+            cursor.close();
+            return false;
+        }
+        cursor.close();
+        return true;
+    }
+
+    public boolean CheckIsDataAlreadyInDBorNot(String TableName,
+                                               String[] dbfields, String[] fieldValues) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        String Query = "SELECT * FROM " + TableName + " WHERE ";
+        for (int i = 0; i < dbfields.length; i++) {
+            Query += dbfields[i] + " = '" + fieldValues[i] + "'";
+            if (i < dbfields.length - 1) {
+                Query += " AND ";
+            }
+        }
         Cursor cursor = db.rawQuery(Query, null);
         if(cursor.getCount() <= 0){
             cursor.close();

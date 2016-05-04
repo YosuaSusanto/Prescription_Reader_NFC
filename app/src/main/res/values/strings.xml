@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">MedFC</string>
+    <string name="app_name">MedFC for Patient</string>
     <string name="account_type">com.example.reico_000.prescriptionreadernfc.account</string>
     <string name="provider_authority">com.example.reico_000.prescriptionreadernfc.provider</string>
     <string name="accept">Accept</string>
