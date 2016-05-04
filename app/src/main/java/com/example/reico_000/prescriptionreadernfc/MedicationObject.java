@@ -13,13 +13,14 @@ public class MedicationObject {
     String _brandName = "";
     String _genericName = "";
     String _dosageForm = "";
+    String _unit= "";
     String _perDosage = "";
     String _totalDosage = "";
     String _consumptionTime = "";
     String _administration = "";
     String _remarks = "";
-    String _sideEffects = "";
     String _prescriptionDate = "";
+    String _status = "";
 
     public MedicationObject(){
     }
@@ -30,21 +31,22 @@ public class MedicationObject {
     }
 
     public MedicationObject(int id, String brandName, String genericName, String dosageForm,
-                            String perDosage, String totalDosage, String consumptionTime,
-                            String patientID, String administration, String remarks,
-                            String sideEffects, String prescriptionDate){
+                            String unit, String perDosage, String totalDosage,
+                            String consumptionTime, String patientID, String administration,
+                            String remarks, String prescriptionDate, String status){
         this._ID = id;
         this._brandName = brandName;
         this._genericName = genericName;
         this._dosageForm = dosageForm;
+        this._unit = unit;
         this._perDosage = perDosage;
         this._totalDosage = totalDosage;
         this._consumptionTime = consumptionTime;
         this._patientID = patientID;
         this._administration = administration;
         this._remarks = remarks;
-        this._sideEffects = sideEffects;
         this._prescriptionDate = prescriptionDate;
+        this._status = status;
     }
 
     public int get_id(){
@@ -61,6 +63,10 @@ public class MedicationObject {
 
     public String get_dosageForm(){
         return this._dosageForm;
+    }
+
+    public String get_unit(){
+        return this._unit;
     }
 
     public String get_perDosage(){
@@ -87,20 +93,16 @@ public class MedicationObject {
         return this._remarks;
     }
 
-    public String get_sideEffects(){
-        return this._sideEffects;
-    }
-
     public String get_prescriptionDate(){
         return this._prescriptionDate;
     }
 
-    public void set_consumptionTime(String newConsumptionTime){
-        this._consumptionTime = newConsumptionTime;
+    public String get_status(){
+        return this._status;
     }
 
-    public void set_sideEffects(String sideEffects){
-        this._sideEffects = sideEffects;
+    public void set_consumptionTime(String newConsumptionTime){
+        this._consumptionTime = newConsumptionTime;
     }
 
     public void set_remarksBlock(){
@@ -120,14 +122,15 @@ public class MedicationObject {
         values.put(MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME, _brandName);
         values.put(MedicationDatabaseSQLiteHandler.KEY_GENERIC_NAME, _genericName);
         values.put(MedicationDatabaseSQLiteHandler.KEY_DOSAGE_FORM, _dosageForm);
+        values.put(MedicationDatabaseSQLiteHandler.KEY_UNIT, _unit);
         values.put(MedicationDatabaseSQLiteHandler.KEY_PER_DOSAGE, _perDosage);
         values.put(MedicationDatabaseSQLiteHandler.KEY_TOTAL_DOSAGE, _totalDosage);
         values.put(MedicationDatabaseSQLiteHandler.KEY_CONSUMPTION_TIME, _consumptionTime);
         values.put(MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID, _patientID);
         values.put(MedicationDatabaseSQLiteHandler.KEY_ADMINISTRATION, _administration);
         values.put(MedicationDatabaseSQLiteHandler.KEY_REMARKS, _remarks);
-        values.put(MedicationDatabaseSQLiteHandler.KEY_SIDEEFFECTS, _sideEffects);
         values.put(MedicationDatabaseSQLiteHandler.KEY_PRESCRIPTIONDATE, _prescriptionDate);
+        values.put(MedicationDatabaseSQLiteHandler.KEY_STATUS, _status);
         return values;
     }
 
@@ -137,16 +140,17 @@ public class MedicationObject {
         String brandName = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_BRAND_NAME));
         String genericName = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_GENERIC_NAME));
         String dosageForm = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_DOSAGE_FORM));
+        String unit = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_UNIT));
         String perDosage = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_PER_DOSAGE));
         String totalDosage = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_TOTAL_DOSAGE));
         String consumptionTime = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_CONSUMPTION_TIME));
         String patientID = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID));
         String administration = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_ADMINISTRATION));
         String remarks = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_REMARKS));
-        String sideEffects = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_SIDEEFFECTS));
         String prescriptionDate = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_PRESCRIPTIONDATE));
+        String status = curMedication.getString(curMedication.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_STATUS));
 
-        return new MedicationObject(id, brandName, genericName, dosageForm, perDosage, totalDosage,
-                consumptionTime, patientID, administration, remarks, sideEffects, prescriptionDate);
+        return new MedicationObject(id, brandName, genericName, dosageForm, unit, perDosage, totalDosage,
+                consumptionTime, patientID, administration, remarks, prescriptionDate, status);
     }
 }

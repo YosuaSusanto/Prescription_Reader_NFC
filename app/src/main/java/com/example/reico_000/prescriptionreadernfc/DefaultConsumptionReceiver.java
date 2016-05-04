@@ -1,6 +1,8 @@
 package com.example.reico_000.prescriptionreadernfc;
 
 import android.accounts.Account;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.ContentValues;
@@ -8,11 +10,15 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 
 /**
  * Created by Yosua Susanto on 30/12/2015.
@@ -39,7 +45,64 @@ public class DefaultConsumptionReceiver extends BroadcastReceiver {
             insertDefaultConsumptionData(context, account, patientID);
         }
 //        Toast.makeText(context, "PatientID: " + patientID, Toast.LENGTH_SHORT).show();
+        scheduleAlarm(context, patientID);
         insertDefaultConsumptionData(context, account, patientID);
+    }
+
+    public void scheduleAlarm(Context context, String patientID) {
+        List<String> alarmList = new ArrayList<String>();
+        ContentResolver resolver = context.getContentResolver();
+        Uri uri = MedicationContract.Medications.CONTENT_URI;
+        String[] projection = MedicationDatabaseSQLiteHandler.ALL_MED_KEYS;
+        String selection = MedicationDatabaseSQLiteHandler.KEY_PATIENT_ID + " = ?";
+        String[] selectionArgs = new String[]{patientID};
+
+        Cursor cursor =
+                resolver.query(uri,
+                        projection,
+                        selection,
+                        selectionArgs,
+                        null);
+        while (cursor.moveToNext()) {
+            Integer med_id = cursor.getInt(cursor.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_ID));
+            String consumptionTime = cursor.getString(cursor.getColumnIndex(MedicationDatabaseSQLiteHandler.KEY_CONSUMPTION_TIME));
+            String[] timeArr = consumptionTime.split(", ");
+            for (int i = 0; i < timeArr.length; i++) {
+                alarmList.add(med_id.toString() + " " + timeArr[i]);
+            }
+        }
+        Log.d("Test", "populateAlarmList exited");
+        cursor.close();
+
+        Intent intent = new Intent(context, NotificationBarAlarm.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        for (int i = 0; i < alarmList.size(); i++) {
+            String id = alarmList.get(i).split(" ")[0];
+            String time = alarmList.get(i).split(" ")[1];
+            Integer hour = Integer.parseInt(time.split(":")[0]);
+            Integer min = Integer.parseInt(time.split(":")[1]);
+            Calendar curCal = Calendar.getInstance();
+            long curTimeInMillis = curCal.getTimeInMillis();
+            Calendar cal = Calendar.getInstance();
+            cal.set(Calendar.HOUR_OF_DAY, hour);
+            cal.set(Calendar.MINUTE, min);
+            cal.set(Calendar.SECOND, 0);
+            cal.set(Calendar.MILLISECOND, 0);
+            long sdl = cal.getTimeInMillis();
+
+            AlarmManager ALARM = (AlarmManager)context.getSystemService(Context.ALARM_SERVICE);
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(context, i+1, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+            ALARM.cancel(pendingIntent);
+            if (Build.VERSION.SDK_INT >= 19) {
+                if (curTimeInMillis < sdl) {
+                    ALARM.setExact(AlarmManager.RTC_WAKEUP, sdl, pendingIntent);
+                }
+            } else {
+                if (curTimeInMillis < sdl) {
+                    ALARM.set(AlarmManager.RTC_WAKEUP, sdl, pendingIntent);
+                }
+            }
+        }
     }
 
     public void insertDefaultConsumptionData(Context context, Account account, String patientID) {

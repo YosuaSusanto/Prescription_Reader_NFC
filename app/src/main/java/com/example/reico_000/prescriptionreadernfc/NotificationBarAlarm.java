@@ -1,5 +1,6 @@
 package com.example.reico_000.prescriptionreadernfc;
 
+import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -12,6 +13,7 @@ import android.database.Cursor;
 import android.media.AudioManager;
 import android.media.RingtoneManager;
 import android.net.Uri;
+import android.os.Build;
 import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationCompat;
 import android.text.format.Time;
@@ -30,112 +32,139 @@ import helper.SessionManager;
  */
 public class NotificationBarAlarm extends BroadcastReceiver {
 
-    NotificationManager notifyManager;
+    NotificationManager notifyManager = null;
     List<String> medicineList;
     List<String> lateMedicineList;
 
     @Override
     public void onReceive(Context context, Intent intent) {
-
-        Log.d("NotificationAlarm", "onReceive");
-        SessionManager session = new SessionManager(context);
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        String PatientID = session.getPatientID();
-        notifyManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-
-        // This Activity will be started when the user clicks the notification
-        // in the notification bar
-
-        long current_time = System.currentTimeMillis();
-        String[] titleArray = new String[4];
-        titleArray[0] = "Morning Medications";
-        titleArray[1] = "Afternoon Medications";
-        titleArray[2] = "Evening Medications";
-        titleArray[3] = "Before Sleep Medications";
-        int timeMessage = 3;
-
-        Calendar timeMorn = Calendar.getInstance();
-        timeMorn.set(Calendar.HOUR_OF_DAY, 12);
-        timeMorn.set(Calendar.MINUTE, 0);
-        long timeForMorn = timeMorn.getTimeInMillis();
-
-        Calendar timeAft = Calendar.getInstance();
-        timeAft.set(Calendar.HOUR_OF_DAY, 17);
-        timeAft.set(Calendar.MINUTE, 0);
-        long timeForAft = timeAft.getTimeInMillis();
-
-        Calendar timeEve = Calendar.getInstance();
-        timeEve.set(Calendar.HOUR_OF_DAY, 22);
-        timeEve.set(Calendar.MINUTE, 0);
-        long timeForEve = timeEve.getTimeInMillis();
-
-        Calendar timeBS = Calendar.getInstance();
-        timeBS.set(Calendar.HOUR_OF_DAY, 2);
-        timeBS.set(Calendar.MINUTE, 0);
-        long timeForBS = timeBS.getTimeInMillis();
-
-        if (current_time < timeForEve){
-            timeMessage = 2;
+        if (notifyManager == null) {
+            notifyManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         }
-
-        if (current_time < timeForAft){
-            timeMessage = 1;
+        boolean isSnoozed = false;
+        if (intent.getBooleanExtra("isSnoozed", false)) {
+            isSnoozed = intent.getBooleanExtra("isSnoozed", false);
         }
+        if (isSnoozed) {
+            notifyManager.cancel(0);
+            AlarmManager ALARM = (AlarmManager)context.getSystemService(Context.ALARM_SERVICE);
+            intent.putExtra("isSnoozed", false);
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+            if (Build.VERSION.SDK_INT >= 19) {
+                ALARM.setExact(AlarmManager.RTC, System.currentTimeMillis() + 1000*60*15 ,pendingIntent);
+            } else {
+                ALARM.set(AlarmManager.RTC, System.currentTimeMillis() + 1000*60*15 ,pendingIntent);
+            }
+        } else {
+            Log.d("NotificationAlarm", "onReceive");
+            SessionManager session = new SessionManager(context);
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+            String PatientID = session.getPatientID();
 
-        if (current_time < timeForMorn){
-            timeMessage = 0;
-        }
+            // This Activity will be started when the user clicks the notification
+            // in the notification bar
 
-        Log.d("Test", "Current time: " + current_time + ", timeMessage: " + timeMessage);
+            long current_time = System.currentTimeMillis();
+            String[] titleArray = new String[4];
+            titleArray[0] = "Morning Medications";
+            titleArray[1] = "Afternoon Medications";
+            titleArray[2] = "Evening Medications";
+            titleArray[3] = "Before Sleep Medications";
+            int timeMessage = 3;
 
-        if (prefs.getBoolean("pref_reminderToggle", true)) {
-            medicineList = new ArrayList<String>();
-            lateMedicineList = new ArrayList<String>();
-            String textToShow = "Remember to take the following medications:";
-            if (updateMedicineList(context, medicineList, lateMedicineList, PatientID, timeMessage)) {
-                if (medicineList.size() > 0) {
-                    for (int i = 0; i < medicineList.size(); i++) {
-                        textToShow += "\n- " + medicineList.get(i);
+            Calendar timeMorn = Calendar.getInstance();
+            timeMorn.set(Calendar.HOUR_OF_DAY, 12);
+            timeMorn.set(Calendar.MINUTE, 0);
+            long timeForMorn = timeMorn.getTimeInMillis();
+
+            Calendar timeAft = Calendar.getInstance();
+            timeAft.set(Calendar.HOUR_OF_DAY, 17);
+            timeAft.set(Calendar.MINUTE, 0);
+            long timeForAft = timeAft.getTimeInMillis();
+
+            Calendar timeEve = Calendar.getInstance();
+            timeEve.set(Calendar.HOUR_OF_DAY, 22);
+            timeEve.set(Calendar.MINUTE, 0);
+            long timeForEve = timeEve.getTimeInMillis();
+
+            Calendar timeBS = Calendar.getInstance();
+            timeBS.set(Calendar.HOUR_OF_DAY, 2);
+            timeBS.set(Calendar.MINUTE, 0);
+            long timeForBS = timeBS.getTimeInMillis();
+
+            if (current_time < timeForEve) {
+                timeMessage = 2;
+            }
+
+            if (current_time < timeForAft) {
+                timeMessage = 1;
+            }
+
+            if (current_time < timeForMorn) {
+                timeMessage = 0;
+            }
+
+            Log.d("Test", "Current time: " + current_time + ", timeMessage: " + timeMessage);
+
+            if (prefs.getBoolean("pref_reminderToggle", true)) {
+                medicineList = new ArrayList<String>();
+                lateMedicineList = new ArrayList<String>();
+                String textToShow = "Remember to take the following medications:";
+                if (updateMedicineList(context, medicineList, lateMedicineList, PatientID, timeMessage)) {
+                    if (medicineList.size() > 0) {
+                        for (int i = 0; i < medicineList.size(); i++) {
+                            textToShow += "\n- " + medicineList.get(i);
+                        }
                     }
-                }
-                if (lateMedicineList.size() > 0) {
-                    textToShow += "\n\n For these following medications, you have missed the dose of " +
-                            "your previous medication. If you are near the next dose of your " +
-                            "medication, skip the previous dose and consume your next dose instead";
-                    for (int i = 0; i < lateMedicineList.size(); i++) {
-                        textToShow += "\n- " + lateMedicineList.get(i);
+                    if (lateMedicineList.size() > 0) {
+                        textToShow += "\n\n For these following medications, you have missed the dose of " +
+                                "your previous medication. If you are near the next dose of your " +
+                                "medication, skip the previous dose and consume your next dose instead";
+                        for (int i = 0; i < lateMedicineList.size(); i++) {
+                            textToShow += "\n- " + lateMedicineList.get(i);
+                        }
                     }
-                }
-                if (medicineList.size() > 0 || lateMedicineList.size() > 0) {
-                    Intent notificationIntent = new Intent(context, MainActivity.class);
-                    notificationIntent.putExtra("text", textToShow);
-                    notificationIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                    notificationIntent.setAction("foo");
-                    PendingIntent contentIntent = PendingIntent.getActivity(context, 0, notificationIntent,
-                            PendingIntent.FLAG_UPDATE_CURRENT);
+                    if (medicineList.size() > 0 || lateMedicineList.size() > 0) {
+                        Intent notificationIntent = new Intent(context, MainActivity.class);
+                        notificationIntent.putExtra("text", textToShow);
+                        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                        notificationIntent.setAction("foo");
+                        PendingIntent contentIntent = PendingIntent.getActivity(context, 0, notificationIntent,
+                                PendingIntent.FLAG_UPDATE_CURRENT);
 
-                    NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
+                        Intent snoozeIntent = new Intent(context, NotificationBarAlarm.class);
+                        snoozeIntent.putExtra("isSnoozed", true);
+                        PendingIntent pIntent = PendingIntent.getActivity(context, 0, snoozeIntent,
+                                PendingIntent.FLAG_CANCEL_CURRENT);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
-                    builder = builder.setContentIntent(contentIntent)
-                            .setSmallIcon(R.mipmap.launcher)
-                            .setAutoCancel(true).setContentTitle("Medications Reminder")
-                            .setContentText(textToShow)
-                            .setStyle(new NotificationCompat.BigTextStyle().bigText(textToShow))
-                            .setPriority(Notification.PRIORITY_HIGH);
+                        AlarmManager ALARM = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+                        PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+                        ALARM.set(AlarmManager.RTC, System.currentTimeMillis() + 1000 * 60 * 15, pendingIntent);
+                        NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
 
-                    AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
-                    if (prefs.getBoolean("pref_reminderVibrationToggle", true)) {
-                        builder = builder.setDefaults(Notification.DEFAULT_VIBRATE);
-                    } else {
-                        builder = builder.setVibrate(new long[0]);
+                        builder = builder.setContentIntent(contentIntent)
+                                .setSmallIcon(R.mipmap.launcher)
+                                .setAutoCancel(true).setContentTitle("Medications Reminder")
+                                .setContentText(textToShow)
+                                .setStyle(new NotificationCompat.BigTextStyle().bigText(textToShow))
+                                .setPriority(Notification.PRIORITY_HIGH)
+                                .addAction(R.drawable.ic_action_alarms, "Snooze 15 mins", pIntent);
+
+                        AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+                        if (prefs.getBoolean("pref_reminderVibrationToggle", true)) {
+                            builder = builder.setDefaults(Notification.DEFAULT_VIBRATE);
+                        } else {
+                            builder = builder.setVibrate(new long[0]);
+                        }
+
+                        if (prefs.getBoolean("pref_reminderSoundToggle", true) &&
+                                am.getRingerMode() == AudioManager.RINGER_MODE_NORMAL) {
+                            builder = builder.setSound(RingtoneManager.
+                                    getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
+                        }
+                        notifyManager.notify(0, builder.build());
                     }
-
-                    if (prefs.getBoolean("pref_reminderSoundToggle", true) &&
-                            am.getRingerMode() == AudioManager.RINGER_MODE_NORMAL) {
-                        builder = builder.setSound(RingtoneManager.
-                                getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
-                    }
-                    notifyManager.notify(0, builder.build());
                 }
             }
         }
@@ -303,9 +332,17 @@ public class NotificationBarAlarm extends BroadcastReceiver {
 
                 if (consumptionTime2.contains(currentReminderTime) && reminderOn) {
 //                if (consumptionTime2.contains(timeString)) {
-                    medicineList.add(genericName + " (" + brandName + ")");
+                    if (brandName.equals("")) {
+                        medicineList.add(genericName);
+                    } else {
+                        medicineList.add(genericName + " (" + brandName + ")");
+                    }
                 } else if (consumptionTime2.contains(currentReminderTime) && lateReminderOn) {
-                    lateMedicineList.add(genericName + " (" + brandName + ")");
+                    if (brandName.equals("")) {
+                        lateMedicineList.add(genericName);
+                    } else {
+                        lateMedicineList.add(genericName + " (" + brandName + ")");
+                    }
                 }
             }
             cursor2.close();
